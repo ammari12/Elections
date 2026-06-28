@@ -1,427 +1,693 @@
 """
-HazMod — Moteur de détection dynamique des hotspots
-Sources (par ordre de priorité) :
-  1. Base locale Maroc  : hazmod_maroc_hotspots.json  (instantané)
-  2. Overpass API OSM   : requête temps réel           (30s, si disponible)
-  3. Fallback géométrique : calcul directionnel        (toujours disponible)
+osm_hotspots.py — HazMod NRBC
+Détection exhaustive des établissements sensibles autour d'un incident Cl₂.
 
-La base locale est pré-chargée en mémoire au démarrage (< 1 ms par requête).
-Overpass est interrogé uniquement si la base locale ne couvre pas la zone.
+Sources (cascade prioritaire) :
+  1. Base locale Maroc vérifiée (129+ sites, < 1ms)
+  2. Overpass API OSM temps réel — 120+ catégories
+  3. Fallback géométrique (toujours disponible)
+
+Catégories couvertes :
+  Santé, Éducation, Sport & Loisirs, Industrie, Transport,
+  Administration, Culture, Social, Tourisme, Infrastructure,
+  Commerce & Marchés, Sécurité, Culte, Environnement
 """
 
-import math, json, os, time, urllib.request, urllib.parse
-from typing import Dict, List, Optional, Tuple
+import math, json, os, requests, time
+from typing import Dict, List
 
-# ── Cache en mémoire ──────────────────────────────────────────────────────────
-_CACHE: Dict[str, dict] = {}
-_CACHE_TTL = 300   # 5 min
+# ── Constantes ────────────────────────────────────────────────────────────────
+_OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
+_TIMEOUT = 28
 
-# ── Base locale Maroc (chargée une seule fois) ───────────────────────────────
-_LOCAL_DB: Optional[List[dict]] = None
-_LOCAL_DB_PATH = None
+# ── Catalogue exhaustif des types OSM ─────────────────────────────────────────
+# Format : tag_key -> {tag_value: (icône, priorité, risque_description)}
+# Priorités : CRITIQUE > ÉLEVÉ > MODÉRÉ > FAIBLE
 
-def _find_db_path() -> Optional[str]:
-    """Cherche le fichier hazmod_maroc_hotspots.json."""
-    try:
-        _here = os.path.dirname(os.path.abspath(__file__))
-    except NameError:
-        _here = os.getcwd()
+_OSM_CATALOG = {
+
+    # ══════════════════════════════════════════════════════
+    # SANTÉ
+    # ══════════════════════════════════════════════════════
+    "amenity": {
+        "hospital":            ("🏥", "CRITIQUE", "Patients vulnérables, évacuation complexe"),
+        "clinic":              ("🏥", "CRITIQUE", "Personnel et patients, évacuation urgente"),
+        "doctors":             ("🩺", "ÉLEVÉ",    "Cabinet médical — patients en consultation"),
+        "dentist":             ("🦷", "MODÉRÉ",   "Cabinet dentaire"),
+        "pharmacy":            ("💊", "ÉLEVÉ",    "Pharmacie — affluence publique"),
+        "nursing_home":        ("🏠", "CRITIQUE", "Maison de retraite — personnes âgées"),
+        "social_facility":     ("🤝", "CRITIQUE", "Centre social — populations vulnérables"),
+        "baby_hatch":          ("👶", "CRITIQUE", "Structure petite enfance"),
+        "veterinary":          ("🐾", "MODÉRÉ",   "Clinique vétérinaire"),
+        "blood_bank":          ("🩸", "ÉLEVÉ",    "Banque de sang"),
+        "dialysis":            ("💉", "CRITIQUE", "Centre de dialyse — patients dépendants"),
+        "rehabilitation":      ("♿", "CRITIQUE", "Centre de rééducation"),
+
+        # ══════════════════════════════════════════════════
+        # ÉDUCATION
+        # ══════════════════════════════════════════════════
+        "school":              ("🏫", "CRITIQUE", "École — enfants en milieu confiné"),
+        "kindergarten":        ("🧒", "CRITIQUE", "Crèche/Maternelle — très jeunes enfants"),
+        "university":          ("🎓", "ÉLEVÉ",    "Université — forte densité étudiante"),
+        "college":             ("🏫", "ÉLEVÉ",    "Lycée/Collège — jeunes, confinement"),
+        "language_school":     ("📖", "MODÉRÉ",   "École de langues"),
+        "music_school":        ("🎵", "MODÉRÉ",   "Conservatoire / École de musique"),
+        "driving_school":      ("🚗", "FAIBLE",   "Auto-école"),
+        "library":             ("📚", "MODÉRÉ",   "Bibliothèque — public nombreux"),
+
+        # ══════════════════════════════════════════════════
+        # ADMINISTRATION & GOUVERNEMENT
+        # ══════════════════════════════════════════════════
+        "townhall":            ("🏛", "ÉLEVÉ",    "Mairie / Commune — personnel et public"),
+        "embassy":             ("🏛", "ÉLEVÉ",    "Ambassade / Consulat"),
+        "courthouse":          ("⚖️",  "ÉLEVÉ",   "Tribunal — personnel et justiciables"),
+        "post_office":         ("📮", "MODÉRÉ",   "Bureau de poste — affluence publique"),
+        "customs":             ("🛃", "MODÉRÉ",   "Douane / Contrôle frontalier"),
+        "register_office":     ("📋", "MODÉRÉ",   "Bureau d'état civil"),
+        "prison":              ("🔒", "CRITIQUE", "Prison — évacuation très complexe"),
+        "police":              ("👮", "ÉLEVÉ",    "Commissariat / Gendarmerie"),
+        "fire_station":        ("🚒", "ÉLEVÉ",    "Caserne pompiers — premiers intervenants"),
+        "ranger_station":      ("🌲", "FAIBLE",   "Poste forestier"),
+
+        # ══════════════════════════════════════════════════
+        # TRANSPORT & MOBILITÉ
+        # ══════════════════════════════════════════════════
+        "bus_station":         ("🚌", "ÉLEVÉ",    "Gare routière — forte concentration"),
+        "taxi":                ("🚕", "FAIBLE",   "Station de taxis"),
+        "parking":             ("🅿️",  "FAIBLE",  "Parking public"),
+        "ferry_terminal":      ("⛴️",  "ÉLEVÉ",   "Terminal ferry — passagers nombreux"),
+        "fuel":                ("⛽", "ÉLEVÉ",    "Station essence — inflammable, public"),
+
+        # ══════════════════════════════════════════════════
+        # LOISIRS, CULTURE & RASSEMBLEMENT
+        # ══════════════════════════════════════════════════
+        "theatre":             ("🎭", "ÉLEVÉ",    "Théâtre — public confiné en représentation"),
+        "cinema":              ("🎬", "ÉLEVÉ",    "Cinéma — public confiné dans l'obscurité"),
+        "arts_centre":         ("🎨", "MODÉRÉ",   "Centre artistique / culturel"),
+        "community_centre":    ("🏘", "ÉLEVÉ",    "Centre communautaire — rassemblement"),
+        "social_centre":       ("🤝", "ÉLEVÉ",    "Centre social"),
+        "conference_centre":   ("🏢", "ÉLEVÉ",    "Centre de congrès — grands rassemblements"),
+        "events_venue":        ("🎪", "ÉLEVÉ",    "Salle de spectacles / événements"),
+        "nightclub":           ("🎵", "MODÉRÉ",   "Boîte de nuit — public en milieu fermé"),
+        "bar":                 ("🍺", "FAIBLE",   "Bar / Café"),
+        "restaurant":          ("🍽", "FAIBLE",   "Restaurant"),
+        "fast_food":           ("🍔", "FAIBLE",   "Restauration rapide — fort trafic"),
+        "cafe":                ("☕", "FAIBLE",   "Café / Salon de thé"),
+        "marketplace":         ("🛒", "ÉLEVÉ",    "Marché public — rassemblement dense"),
+        "food_court":          ("🛒", "MODÉRÉ",   "Galerie alimentaire"),
+        "bank":                ("🏦", "FAIBLE",   "Banque / Agence"),
+        "atm":                 ("💳", "FAIBLE",   "Distributeur automatique"),
+
+        # ══════════════════════════════════════════════════
+        # CULTE
+        # ══════════════════════════════════════════════════
+        "place_of_worship":    ("🕌", "ÉLEVÉ",    "Lieu de culte — rassemblement massif (prière)"),
+        "mosque":              ("🕌", "ÉLEVÉ",    "Mosquée — rassemblement massif"),
+        "church":              ("⛪", "ÉLEVÉ",    "Église — rassemblement"),
+        "synagogue":           ("✡️",  "ÉLEVÉ",   "Synagogue — rassemblement"),
+
+        # ══════════════════════════════════════════════════
+        # REFUGES & HÉBERGEMENT D'URGENCE
+        # ══════════════════════════════════════════════════
+        "shelter":             ("🏕", "CRITIQUE", "Abri d'urgence — populations précaires"),
+        "refugee_site":        ("⛺", "CRITIQUE", "Camp de réfugiés — populations vulnérables"),
+        "homeless_shelter":    ("🏠", "CRITIQUE", "Hébergement sans-abri"),
+        "orphanage":           ("👶", "CRITIQUE", "Orphelinat — enfants"),
+        "childcare":           ("🧒", "CRITIQUE", "Garderie / Centre de jour enfants"),
+        "daycare":             ("🧒", "CRITIQUE", "Crèche de jour"),
+
+        # ══════════════════════════════════════════════════
+        # INFRASTRUCTURE & SERVICES
+        # ══════════════════════════════════════════════════
+        "recycling":           ("♻️",  "FAIBLE",  "Centre de tri / recyclage"),
+        "waste_transfer":      ("🗑", "MODÉRÉ",   "Centre de transfert déchets"),
+        "internet_cafe":       ("💻", "FAIBLE",   "Cybercafé"),
+        "charging_station":    ("⚡", "FAIBLE",   "Borne de recharge"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # LOISIRS & SPORT (tag leisure)
+    # ══════════════════════════════════════════════════════
+    "leisure": {
+        "stadium":             ("🏟", "CRITIQUE", "Stade — dizaines de milliers de personnes"),
+        "sports_centre":       ("🏋", "ÉLEVÉ",    "Complexe sportif — nombreux pratiquants"),
+        "sports_hall":         ("🏀", "ÉLEVÉ",    "Salle de sport / Gymnase"),
+        "swimming_pool":       ("🏊", "ÉLEVÉ",    "Piscine publique — baigneurs exposés"),
+        "water_park":          ("💦", "CRITIQUE", "Parc aquatique — grande affluence"),
+        "fitness_centre":      ("🏋", "MODÉRÉ",   "Salle de fitness / Gym"),
+        "ice_rink":            ("⛸️",  "ÉLEVÉ",   "Patinoire — public confiné"),
+        "golf_course":         ("⛳", "MODÉRÉ",   "Terrain de golf — espace ouvert"),
+        "pitch":               ("⚽", "MODÉRÉ",   "Terrain de sport — activité en plein air"),
+        "track":               ("🏃", "MODÉRÉ",   "Piste d'athlétisme"),
+        "playground":          ("🛝", "CRITIQUE", "Aire de jeux — enfants en plein air"),
+        "park":                ("🌳", "MODÉRÉ",   "Parc public — rassemblement loisirs"),
+        "garden":              ("🌸", "FAIBLE",   "Jardin public"),
+        "nature_reserve":      ("🌿", "FAIBLE",   "Réserve naturelle"),
+        "marina":              ("⛵", "MODÉRÉ",   "Port de plaisance"),
+        "slipway":             ("🚤", "FAIBLE",   "Cale de mise à l'eau"),
+        "horse_riding":        ("🐎", "MODÉRÉ",   "Centre équestre"),
+        "miniature_golf":      ("⛳", "FAIBLE",   "Mini-golf"),
+        "amusement_arcade":    ("🎮", "MODÉRÉ",   "Salle de jeux — adolescents"),
+        "escape_game":         ("🗝", "MODÉRÉ",   "Escape game — confiné"),
+        "bowling_alley":       ("🎳", "MODÉRÉ",   "Bowling — public confiné"),
+        "dog_park":            ("🐕", "FAIBLE",   "Parc canin"),
+        "sauna":               ("🧖", "MODÉRÉ",   "Sauna / Hammam"),
+        "spa":                 ("💆", "MODÉRÉ",   "Spa / Centre de bien-être"),
+        "dance":               ("💃", "MODÉRÉ",   "École de danse"),
+        "hackerspace":         ("💻", "FAIBLE",   "FabLab / Hackerspace"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # TOURISME
+    # ══════════════════════════════════════════════════════
+    "tourism": {
+        "hotel":               ("🏨", "ÉLEVÉ",    "Hôtel — touristes en chambres"),
+        "hostel":              ("🛏", "ÉLEVÉ",    "Auberge de jeunesse — occupation dense"),
+        "motel":               ("🏩", "MODÉRÉ",   "Motel"),
+        "guest_house":         ("🏠", "MODÉRÉ",   "Maison d'hôtes / Riad"),
+        "camp_site":           ("⛺", "MODÉRÉ",   "Camping — tentes exposées"),
+        "caravan_site":        ("🚐", "MODÉRÉ",   "Camping-cars"),
+        "museum":              ("🏛", "MODÉRÉ",   "Musée — visiteurs"),
+        "gallery":             ("🖼", "FAIBLE",   "Galerie d'art"),
+        "theme_park":          ("🎡", "CRITIQUE", "Parc d'attractions — grande affluence"),
+        "zoo":                 ("🦁", "ÉLEVÉ",    "Zoo — visiteurs et animaux"),
+        "aquarium":            ("🐟", "ÉLEVÉ",    "Aquarium — public confiné"),
+        "viewpoint":           ("👁", "FAIBLE",   "Point de vue"),
+        "picnic_site":         ("🧺", "MODÉRÉ",   "Aire de pique-nique"),
+        "attraction":          ("📍", "MODÉRÉ",   "Site touristique"),
+        "information":         ("ℹ️",  "FAIBLE",  "Office de tourisme"),
+        "apartment":           ("🏢", "MODÉRÉ",   "Résidence touristique"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # BUREAUX & ADMINISTRATION
+    # ══════════════════════════════════════════════════════
+    "office": {
+        "government":          ("🏛", "ÉLEVÉ",    "Bureau gouvernemental — fonctionnaires et public"),
+        "administrative":      ("🏢", "MODÉRÉ",   "Administration publique"),
+        "diplomatic":          ("🏛", "ÉLEVÉ",    "Mission diplomatique"),
+        "ngo":                 ("🤝", "MODÉRÉ",   "ONG / Association"),
+        "company":             ("🏢", "MODÉRÉ",   "Siège social entreprise"),
+        "insurance":           ("📋", "FAIBLE",   "Compagnie d'assurances"),
+        "lawyer":              ("⚖️",  "FAIBLE",  "Cabinet d'avocats"),
+        "accountant":          ("💼", "FAIBLE",   "Cabinet comptable"),
+        "research":            ("🔬", "MODÉRÉ",   "Centre de recherche"),
+        "telecommunication":   ("📡", "MODÉRÉ",   "Opérateur télécom — infrastructure"),
+        "newspaper":           ("📰", "FAIBLE",   "Rédaction de presse"),
+        "political_party":     ("🗳", "MODÉRÉ",   "Siège de parti politique"),
+        "religion":            ("🕌", "MODÉRÉ",   "Bureau religieux"),
+        "quango":              ("🏢", "MODÉRÉ",   "Organisme semi-public"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # INDUSTRIE & INFRASTRUCTURE CRITIQUE
+    # ══════════════════════════════════════════════════════
+    "man_made": {
+        "water_tower":         ("🗼", "ÉLEVÉ",    "Château d'eau — infrastructure eau potable"),
+        "pumping_station":     ("⚙️",  "ÉLEVÉ",   "Station de pompage"),
+        "wastewater_plant":    ("🏭", "ÉLEVÉ",    "Station d'épuration"),
+        "water_works":         ("💧", "ÉLEVÉ",    "Usine de traitement eau"),
+        "storage_tank":        ("🛢", "CRITIQUE", "Réservoir de stockage industriel"),
+        "oil_refinery":        ("🏭", "CRITIQUE", "Raffinerie — risque chimique majeur"),
+        "chimney":             ("🏭", "MODÉRÉ",   "Cheminée industrielle"),
+        "gasometer":           ("⛽", "CRITIQUE", "Gazomètre — stockage gaz sous pression"),
+        "tower":               ("🗼", "MODÉRÉ",   "Tour / Pylône — infrastructure"),
+        "mast":                ("📡", "MODÉRÉ",   "Antenne relais"),
+        "pipeline":            ("🔧", "ÉLEVÉ",    "Conduite / Pipeline industriel"),
+        "silo":                ("🌾", "MODÉRÉ",   "Silo agricole / industriel"),
+        "cooling_tower":       ("🏭", "ÉLEVÉ",    "Tour de refroidissement industrielle"),
+        "crane":               ("🏗", "FAIBLE",   "Grue — site de construction actif"),
+        "works":               ("🏭", "ÉLEVÉ",    "Site industriel / usine"),
+        "street_cabinet":      ("📦", "FAIBLE",   "Armoire technique réseau"),
+        "reservoir":           ("💧", "ÉLEVÉ",    "Réservoir d'eau"),
+        "bridge":              ("🌉", "MODÉRÉ",   "Pont — axe de circulation"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # ÉLECTRICITÉ & ÉNERGIE
+    # ══════════════════════════════════════════════════════
+    "power": {
+        "substation":          ("⚡", "CRITIQUE", "Sous-station électrique — infrastructure critique"),
+        "transformer":         ("⚡", "ÉLEVÉ",    "Transformateur électrique"),
+        "plant":               ("🏭", "CRITIQUE", "Centrale électrique"),
+        "generator":           ("⚙️",  "MODÉRÉ",  "Groupe électrogène"),
+        "pole":                ("⚡", "FAIBLE",   "Pylône électrique"),
+        "tower":               ("🗼", "MODÉRÉ",   "Tour électrique haute tension"),
+        "cable":               ("⚡", "FAIBLE",   "Câble électrique"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # TRANSPORTS PUBLICS
+    # ══════════════════════════════════════════════════════
+    "public_transport": {
+        "station":             ("🚇", "ÉLEVÉ",    "Station metro/tram — fort afflux"),
+        "stop_position":       ("🚌", "MODÉRÉ",   "Arrêt de bus / transport en commun"),
+        "platform":            ("🚉", "ÉLEVÉ",    "Quai — concentration de passagers"),
+        "stop_area":           ("🚌", "MODÉRÉ",   "Zone d'arrêt transport"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # FERROVIAIRE
+    # ══════════════════════════════════════════════════════
+    "railway": {
+        "station":             ("🚉", "ÉLEVÉ",    "Gare ferroviaire — voyageurs nombreux"),
+        "halt":                ("🚉", "MODÉRÉ",   "Halte ferroviaire"),
+        "tram_stop":           ("🚊", "MODÉRÉ",   "Arrêt tramway"),
+        "subway_entrance":     ("🚇", "ÉLEVÉ",    "Entrée métro — confiné sous-terrain"),
+        "platform":            ("🚉", "MODÉRÉ",   "Quai ferroviaire"),
+        "depot":               ("🏭", "MODÉRÉ",   "Dépôt ferroviaire"),
+        "yard":                ("🚂", "MODÉRÉ",   "Triage ferroviaire"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # AÉRIEN
+    # ══════════════════════════════════════════════════════
+    "aeroway": {
+        "aerodrome":           ("✈️",  "CRITIQUE", "Aéroport — milliers de passagers"),
+        "terminal":            ("✈️",  "CRITIQUE", "Terminal aéroportuaire"),
+        "helipad":             ("🚁", "MODÉRÉ",   "Héliport / Hélipad"),
+        "heliport":            ("🚁", "ÉLEVÉ",    "Héliport — transport médical ou civil"),
+        "apron":               ("✈️",  "ÉLEVÉ",   "Aire de trafic aéroportuaire"),
+        "hangar":              ("🛩", "MODÉRÉ",   "Hangar aéronautique"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # COMMERCE & GRANDE SURFACE
+    # ══════════════════════════════════════════════════════
+    "shop": {
+        "supermarket":         ("🛒", "ÉLEVÉ",    "Supermarché — forte affluence"),
+        "mall":                ("🏬", "ÉLEVÉ",    "Centre commercial — milliers de visiteurs"),
+        "department_store":    ("🏬", "ÉLEVÉ",    "Grand magasin"),
+        "convenience":         ("🏪", "FAIBLE",   "Épicerie de proximité"),
+        "clothes":             ("👗", "FAIBLE",   "Magasin de vêtements"),
+        "electronics":         ("📱", "MODÉRÉ",   "Magasin d'électronique — affluence"),
+        "hardware":            ("🔧", "MODÉRÉ",   "Quincaillerie"),
+        "chemist":             ("🧪", "ÉLEVÉ",    "Droguerie / Parapharmacie — produits chimiques"),
+        "gas":                 ("⛽", "CRITIQUE", "Dépôt de gaz — stockage inflammable"),
+        "kiosk":               ("🗞", "FAIBLE",   "Kiosque"),
+        "bakery":              ("🥖", "FAIBLE",   "Boulangerie — clientèle régulière"),
+        "butcher":             ("🥩", "FAIBLE",   "Boucherie"),
+        "market":              ("🛒", "ÉLEVÉ",    "Marché couvert — rassemblement dense"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # BÂTIMENTS (fallback tag building)
+    # ══════════════════════════════════════════════════════
+    "building": {
+        "hospital":            ("🏥", "CRITIQUE", "Bâtiment hospitalier"),
+        "school":              ("🏫", "CRITIQUE", "Établissement scolaire"),
+        "university":          ("🎓", "ÉLEVÉ",    "Bâtiment universitaire"),
+        "church":              ("⛪", "ÉLEVÉ",    "Édifice religieux"),
+        "mosque":              ("🕌", "ÉLEVÉ",    "Mosquée"),
+        "stadium":             ("🏟", "CRITIQUE", "Stade"),
+        "sports_hall":         ("🏋", "ÉLEVÉ",    "Halle sportive"),
+        "train_station":       ("🚉", "ÉLEVÉ",    "Gare"),
+        "transportation":      ("🚌", "ÉLEVÉ",    "Hub de transport"),
+        "retail":              ("🏬", "MODÉRÉ",   "Commerce / Centre commercial"),
+        "commercial":          ("🏢", "MODÉRÉ",   "Bâtiment commercial"),
+        "industrial":          ("🏭", "ÉLEVÉ",    "Bâtiment industriel"),
+        "warehouse":           ("🏭", "MODÉRÉ",   "Entrepôt"),
+        "government":          ("🏛", "ÉLEVÉ",    "Bâtiment administratif"),
+        "dormitory":           ("🛏", "ÉLEVÉ",    "Dortoir / Résidence étudiante"),
+        "apartments":          ("🏢", "MODÉRÉ",   "Immeuble résidentiel — population dense"),
+        "residential":         ("🏘", "MODÉRÉ",   "Zone résidentielle"),
+        "hotel":               ("🏨", "ÉLEVÉ",    "Hôtel"),
+        "prison":              ("🔒", "CRITIQUE", "Établissement pénitentiaire"),
+        "military":            ("🪖", "ÉLEVÉ",    "Installation militaire"),
+        "fire_station":        ("🚒", "ÉLEVÉ",    "Caserne de pompiers"),
+        "civic":               ("🏛", "ÉLEVÉ",    "Bâtiment civique"),
+        "public":              ("🏢", "MODÉRÉ",   "Bâtiment public"),
+        "kindergarten":        ("🧒", "CRITIQUE", "Crèche / Maternelle"),
+        "college":             ("🏫", "ÉLEVÉ",    "Lycée / Collège"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # MILITAIRE
+    # ══════════════════════════════════════════════════════
+    "military": {
+        "base":                ("🪖", "ÉLEVÉ",    "Base militaire — personnel nombreux"),
+        "barracks":            ("🪖", "ÉLEVÉ",    "Caserne militaire"),
+        "bunker":              ("🛡", "MODÉRÉ",   "Bunker / Abri militaire"),
+        "checkpoint":          ("🚧", "MODÉRÉ",   "Point de contrôle"),
+        "training_area":       ("🪖", "MODÉRÉ",   "Zone d'entraînement militaire"),
+        "airfield":            ("✈️",  "ÉLEVÉ",   "Terrain d'aviation militaire"),
+        "naval_base":          ("⚓", "ÉLEVÉ",    "Base navale"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # FRONTIÈRES & SÉCURITÉ
+    # ══════════════════════════════════════════════════════
+    "barrier": {
+        "border_control":      ("🛃", "ÉLEVÉ",    "Poste frontière — flux intense"),
+        "toll_booth":          ("🚧", "MODÉRÉ",   "Péage — concentration de véhicules"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # ENVIRONNEMENT & EAU
+    # ══════════════════════════════════════════════════════
+    "natural": {
+        "water":               ("💧", "ÉLEVÉ",    "Plan d'eau — contamination possible"),
+        "beach":               ("🏖", "ÉLEVÉ",    "Plage — rassemblement estival"),
+        "wetland":             ("🌿", "MODÉRÉ",   "Zone humide — écosystème sensible"),
+        "spring":              ("💧", "ÉLEVÉ",    "Source d'eau potable"),
+    },
+
+    # ══════════════════════════════════════════════════════
+    # LANDUSE — ZONES À RISQUE
+    # ══════════════════════════════════════════════════════
+    "landuse": {
+        "industrial":          ("🏭", "ÉLEVÉ",    "Zone industrielle — usines et entrepôts"),
+        "commercial":          ("🏬", "MODÉRÉ",   "Zone commerciale — forte fréquentation"),
+        "retail":              ("🛒", "MODÉRÉ",   "Zone de commerce de détail"),
+        "residential":         ("🏘", "MODÉRÉ",   "Zone résidentielle — population dense"),
+        "military":            ("🪖", "ÉLEVÉ",    "Zone militaire"),
+        "port":                ("⚓", "ÉLEVÉ",    "Zone portuaire — activités industrielles"),
+        "railway":             ("🚉", "MODÉRÉ",   "Zone ferroviaire"),
+        "garages":             ("🚗", "FAIBLE",   "Zone de garages"),
+        "allotments":          ("🌱", "FAIBLE",   "Jardins familiaux"),
+        "recreation_ground":   ("⚽", "MODÉRÉ",   "Terrain de sport / loisirs"),
+        "fairground":          ("🎡", "ÉLEVÉ",    "Champ de foire / fête foraine"),
+        "cemetery":            ("🪦", "FAIBLE",   "Cimetière"),
+        "quarry":              ("⛏", "MODÉRÉ",   "Carrière"),
+        "landfill":            ("🗑", "MODÉRÉ",   "Décharge / Centre d'enfouissement"),
+        "brownfield":          ("🏗", "MODÉRÉ",   "Friche industrielle"),
+        "greenhouse_horticulture": ("🌿", "FAIBLE", "Serres horticoles"),
+    },
+}
+
+# ── Requête Overpass optimisée ────────────────────────────────────────────────
+
+def _build_overpass_query(lat: float, lon: float, radius_m: float) -> str:
+    """
+    Construit la requête Overpass QL couvrant toutes les catégories du catalogue.
+    Inclut nodes ET ways pour capturer les grands bâtiments (stades, complexes...).
+    """
+    r = int(radius_m)
+
+    # Construire les filtres par tag
+    tag_filters = []
+    for tag_key, tag_vals in _OSM_CATALOG.items():
+        vals = "|".join(tag_vals.keys())
+        tag_filters.append(
+            f'  node["{tag_key}"~"{vals}"](around:{r},{lat},{lon});'
+        )
+        tag_filters.append(
+            f'  way["{tag_key}"~"{vals}"](around:{r},{lat},{lon});'
+        )
+        tag_filters.append(
+            f'  relation["{tag_key}"~"{vals}"](around:{r},{lat},{lon});'
+        )
+
+    q = "[out:json][timeout:28];\n(\n"
+    q += "\n".join(tag_filters)
+    q += "\n);\nout center tags;"
+    return q
+
+
+def _classify_element(tags: dict) -> tuple:
+    """
+    Retourne (icône, priorité, description) pour un élément OSM donné.
+    Cherche dans tous les tags dans l'ordre de priorité.
+    """
+    priority_order = ["CRITIQUE", "ÉLEVÉ", "MODÉRÉ", "FAIBLE"]
+    best = None
+
+    for tag_key, tag_vals in _OSM_CATALOG.items():
+        if tag_key not in tags:
+            continue
+        tag_val = tags[tag_key]
+        if tag_val in tag_vals:
+            icon, prio, risk = tag_vals[tag_val]
+            if best is None or priority_order.index(prio) < priority_order.index(best[1]):
+                best = (icon, prio, risk)
+
+    return best or ("📍", "MODÉRÉ", "Établissement public")
+
+
+def _get_name(tags: dict) -> str:
+    """Extrait le meilleur nom disponible."""
+    for key in ["name", "name:fr", "name:ar", "official_name",
+                "short_name", "brand", "operator", "ref"]:
+        if key in tags and tags[key].strip():
+            return tags[key].strip()
+    # Fallback : type
+    for k in ["amenity", "leisure", "tourism", "office", "building",
+              "shop", "man_made", "power", "military", "public_transport"]:
+        if k in tags:
+            return tags[k].replace("_", " ").title()
+    return "Établissement sans nom"
+
+
+def _haversine(lat1, lon1, lat2, lon2) -> float:
+    """Distance en mètres entre deux points GPS."""
+    R = 6371000.0
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlam = math.radians(lon2 - lon1)
+    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlam/2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+
+def _bearing(lat1, lon1, lat2, lon2) -> float:
+    """Cap en degrés (0=N, 90=E) de (lat1,lon1) vers (lat2,lon2)."""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dlam = math.radians(lon2 - lon1)
+    x = math.sin(dlam) * math.cos(phi2)
+    y = math.cos(phi1)*math.sin(phi2) - math.sin(phi1)*math.cos(phi2)*math.cos(dlam)
+    return (math.degrees(math.atan2(x, y)) + 360) % 360
+
+
+def _assign_zone(dist: float, r3: float, r2: float, r1: float) -> str:
+    if dist <= r3:
+        return "ERPG-3"
+    elif dist <= r2:
+        return "ERPG-2"
+    elif dist <= r1:
+        return "ERPG-1"
+    return None
+
+
+def _query_overpass(lat: float, lon: float, radius_m: float) -> list:
+    """Requête Overpass avec fallback sur plusieurs serveurs."""
+    query = _build_overpass_query(lat, lon, radius_m)
+    for url in _OVERPASS_URLS:
+        try:
+            resp = requests.post(
+                url, data={"data": query},
+                timeout=_TIMEOUT,
+                headers={"User-Agent": "HazMod-NRBC/2.0 (hazmat-decision-support)"}
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return data.get("elements", [])
+        except Exception:
+            continue
+    return []
+
+
+def _load_local_base() -> list:
+    """Charge la base locale Maroc JSON si disponible."""
     candidates = [
-        os.path.join(_here, "hazmod_maroc_hotspots.json"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     "hazmod_maroc_hotspots.json"),
         os.path.join(os.getcwd(), "hazmod_maroc_hotspots.json"),
         "hazmod_maroc_hotspots.json",
     ]
-    for p in candidates:
-        if os.path.isfile(p):
-            return p
-    return None
+    for path in candidates:
+        if os.path.isfile(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+    return []
 
-def _load_local_db() -> List[dict]:
-    """Charge la base locale en mémoire (appelée une seule fois)."""
-    global _LOCAL_DB, _LOCAL_DB_PATH
-    if _LOCAL_DB is not None:
-        return _LOCAL_DB
-    path = _find_db_path()
-    if path:
-        try:
-            with open(path, encoding="utf-8") as f:
-                data = json.load(f)
-            _LOCAL_DB = data.get("features", [])
-            _LOCAL_DB_PATH = path
-            return _LOCAL_DB
-        except Exception:
-            pass
-    _LOCAL_DB = []
-    return _LOCAL_DB
 
-# ── Helpers géo ───────────────────────────────────────────────────────────────
-def _dist_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    R = 6371000.0
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = (math.sin(dlat/2)**2 +
-         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
-         math.sin(dlon/2)**2)
-    return R * 2 * math.asin(math.sqrt(min(a, 1.0)))
+def _local_hotspots(lat: float, lon: float, radius_m: float) -> list:
+    """Cherche dans la base locale les sites dans le rayon."""
+    base = _load_local_base()
+    results = []
+    for site in base:
+        slat = site.get("lat", 0)
+        slon = site.get("lon", 0)
+        dist = _haversine(lat, lon, slat, slon)
+        if dist <= radius_m:
+            results.append({
+                "name":     site.get("name", "Site local"),
+                "icon":     site.get("icon", "📍"),
+                "priority": site.get("priority", "MODÉRÉ"),
+                "risk":     site.get("risk", "Établissement sensible"),
+                "coords":   [slat, slon],
+                "dist":     int(dist),
+                "source":   "base_locale",
+                "tags":     site.get("tags", {}),
+            })
+    return results
 
-def _zone(dist: float, r3: float, r2: float, r1: float) -> Optional[str]:
-    if dist <= r3: return "ERPG-3"
-    if dist <= r2: return "ERPG-2"
-    if dist <= r1: return "ERPG-1"
-    return None
 
-# ── Mapping type OSM ─────────────────────────────────────────────────────────
-_TYPE_META = {
-    "hospital":        ("🏥", "CRITIQUE",  "Patients non mobiles — protocole Cl2 requis"),
-    "clinic":          ("🏥", "CRITIQUE",  "Personnel soignant et patients exposés"),
-    "doctors":         ("⚕️",  "ÉLEVÉ",    "Cabinet médical — patients à évacuer"),
-    "pharmacy":        ("💊", "MODÉRÉ",   "Pharmacie — clientèle exposée"),
-    "school":          ("🏫", "CRITIQUE",  "Enfants — sensibilité Cl2 ×2"),
-    "kindergarten":    ("🏫", "CRITIQUE",  "Crèche — nourrissons très vulnérables"),
-    "university":      ("🎓", "ÉLEVÉ",    "Étudiants — évacuation campus"),
-    "college":         ("🎓", "ÉLEVÉ",    "Établissement supérieur"),
-    "fire_station":    ("🚒", "ÉLEVÉ",    "Caserne — mobilisation intervention chimique"),
-    "police":          ("🚓", "ÉLEVÉ",    "Commissariat — coordination évacuation"),
-    "military":        ("🪖", "ÉLEVÉ",    "Zone militaire — protocole interne"),
-    "bus_station":     ("🚌", "ÉLEVÉ",    "Gare routière — voyageurs à alerter"),
-    "station":         ("🚉", "ÉLEVÉ",    "Gare ferroviaire — passagers bloqués"),
-    "aerodrome":       ("✈️",  "CRITIQUE", "Aéroport — évacuation massive"),
-    "fuel":            ("⛽", "ÉLEVÉ",    "Station essence — risque incendie"),
-    "supermarket":     ("🛒", "ÉLEVÉ",    "Hypermarché — public dense"),
-    "mall":            ("🛍️", "ÉLEVÉ",    "Centre commercial — confinement"),
-    "marketplace":     ("🏪", "MODÉRÉ",   "Marché — vendeurs et clients"),
-    "stadium":         ("🏟️", "CRITIQUE", "Stade — grande capacité"),
-    "sports_centre":   ("🏋️", "MODÉRÉ",   "Centre sportif — usagers"),
-    "place_of_worship":("🕌", "MODÉRÉ",   "Lieu de culte — fidèles rassemblés"),
-    "townhall":        ("🏛️", "ÉLEVÉ",    "Mairie — agents et public"),
-    "government":      ("🏛️", "ÉLEVÉ",    "Bâtiment officiel — agents"),
-    "embassy":         ("🏛️", "CRITIQUE", "Ambassade — personnel diplomatique"),
-    "prison":          ("🔒", "CRITIQUE", "Prison — personnes non évacuables"),
-    "nursing_home":    ("🏠", "CRITIQUE", "Maison de retraite — personnes âgées"),
-    "industrial":      ("🏭", "CRITIQUE", "Zone industrielle — effet domino potentiel"),
-    "warehouse":       ("📦", "ÉLEVÉ",    "Entrepôt — personnels exposés"),
-    "power":           ("⚡", "CRITIQUE", "Infrastructure électrique critique"),
-    "water_works":     ("💧", "CRITIQUE", "Station traitement eau — vitale"),
-    "hotel":           ("🏨", "MODÉRÉ",   "Hôtel — résidents et touristes"),
-    # ── Établissements supplémentaires ─────────────────────────────────────
-    "theatre":         ("🎭", "MODÉRÉ",   "Théâtre — spectateurs rassemblés"),
-    "cinema":          ("🎬", "MODÉRÉ",   "Cinéma — public confiné"),
-    "library":         ("📚", "MODÉRÉ",   "Bibliothèque — usagers présents"),
-    "community_centre":("🏘️", "MODÉRÉ",   "Centre communautaire — population locale"),
-    "social_centre":   ("🤝", "MODÉRÉ",   "Centre social — personnes fragiles"),
-    "social_facility": ("♿", "CRITIQUE",  "Établissement médico-social — handicapés"),
-    "courthouse":      ("⚖️",  "ÉLEVÉ",    "Tribunal — personnel et justiciables"),
-    "post_office":     ("📮", "FAIBLE",   "Bureau de poste — file d'attente"),
-    "bank":            ("🏦", "FAIBLE",   "Banque — clients présents"),
-    "restaurant":      ("🍽️", "FAIBLE",   "Restaurant — clientèle exposée"),
-    "bar":             ("🍺", "FAIBLE",   "Bar — clientèle exposée"),
-    "nightclub":       ("🎵", "MODÉRÉ",   "Discothèque — clientèle dense nuit"),
-    "charging_station":("🔌", "FAIBLE",   "Borne recharge — passage"),
-    "college_secondary":("🏫","CRITIQUE", "Lycée — adolescents à évacuer"),
-    "training":        ("📋", "MODÉRÉ",   "Centre de formation — stagiaires"),
-    "conference_centre":("🏢","ÉLEVÉ",    "Centre de congrès — participants"),
-    "office_government":("🏛️","ÉLEVÉ",    "Bureau administratif — agents publics"),
-    "refugee":         ("⛺", "CRITIQUE",  "Camp réfugiés — population vulnérable"),
-    "shelter":         ("🏚️", "CRITIQUE",  "Hébergement d'urgence — sans-abri"),
-    "hospital_primary":("🏥", "CRITIQUE",  "CHU/CHR — centre de référence régional"),
-    "blood_bank":      ("🩸", "ÉLEVÉ",    "Banque du sang — ressource critique"),
-    "daycare":         ("👶", "CRITIQUE",  "Garderie — nourrissons très vulnérables"),
-    "veterinary":      ("🐾", "FAIBLE",   "Vétérinaire — personnel et animaux"),
-    "car_wash":        ("🚗", "FAIBLE",   "Station lavage — personnel exposé"),
-    "recycling":       ("♻️",  "MODÉRÉ",   "Centre recyclage — ouvriers exposés"),
-    "customs":         ("🛃", "MODÉRÉ",   "Douane — agents et voyageurs"),
-    "border_control":  ("🛂", "MODÉRÉ",   "Contrôle frontière"),
-    "lighthouse":      ("🔦", "FAIBLE",   "Phare — personnel technique"),
-    "tower":           ("📡", "FAIBLE",   "Tour de communication — techniciens"),
-    "water_tower":     ("💧", "ÉLEVÉ",    "Château d'eau — infrastructure vitale"),
-    "pumping_station": ("⚙️",  "CRITIQUE", "Station pompage — eau potable"),
-    "substation":      ("⚡", "CRITIQUE",  "Sous-station électrique — réseau"),
-    "transformer":     ("🔌", "ÉLEVÉ",    "Transformateur — réseau électrique"),
-    "gas_station":     ("⛽", "ÉLEVÉ",    "Station gaz — risque explosion Cl2"),
-    "oil_refinery":    ("🏭", "CRITIQUE",  "Raffinerie — effet domino chimique"),
-    "chemical":        ("⚗️",  "CRITIQUE",  "Usine chimique — réaction possible Cl2"),
-    "cold_storage":    ("❄️",  "MODÉRÉ",   "Entrepôt frigorifique — personnel"),
-    "logistics":       ("📦", "MODÉRÉ",   "Centre logistique — travailleurs"),
-    "port":            ("⚓", "ÉLEVÉ",    "Port — marins et dockers"),
-    "ferry_terminal":  ("⛴️",  "ÉLEVÉ",    "Terminal ferry — passagers"),
-    "bus_stop":        ("🚏", "MODÉRÉ",   "Arrêt bus — passagers en attente"),
-    "metro_station":   ("🚇", "CRITIQUE",  "Station métro — concentration importante"),
-    "tram_stop":       ("🚊", "MODÉRÉ",   "Arrêt tramway — usagers"),
-    "park":            ("🌳", "FAIBLE",   "Parc public — promeneurs"),
-    "beach":           ("🏖️", "MODÉRÉ",   "Plage — baigneurs et familles"),
-    "camp_site":       ("⛺", "MODÉRÉ",   "Camping — campeurs exposés"),
-    "sports_hall":     ("🏋️", "MODÉRÉ",   "Salle de sport — sportifs"),
-    "swimming_pool":   ("🏊", "MODÉRÉ",   "Piscine — nageurs et enfants"),
-    "museum":          ("🏛️", "MODÉRÉ",   "Musée — visiteurs et personnel"),
-    "art_gallery":     ("🖼️",  "FAIBLE",   "Galerie d'art — visiteurs"),
-}
-_DEFAULT_META = ("📍", "MODÉRÉ", "Établissement identifié")
-
-# ── Requête base locale ───────────────────────────────────────────────────────
-def _query_local(lat: float, lon: float,
-                 r3: float, r2: float, r1: float) -> Tuple[Dict, int]:
+def get_hotspots(
+    lat: float, lon: float,
+    r3: float, r2: float, r1: float,
+    prop_dir: float
+) -> Dict[str, List[dict]]:
     """
-    Interroge la base locale Maroc.
-    Retourne (zones_dict, nombre_total_trouvés).
-    Rapide : O(n) sur ~120-500 entrées.
+    Point d'entrée principal.
+    Retourne {"ERPG-3": [...], "ERPG-2": [...], "ERPG-1": [...]}
+    chaque item : {name, icon, priority, risk, coords, dist, source}
     """
-    db = _load_local_db()
-    zones: Dict[str, List[dict]] = {"ERPG-3": [], "ERPG-2": [], "ERPG-1": []}
+    result = {"ERPG-3": [], "ERPG-2": [], "ERPG-1": []}
+    seen_coords = set()
+    max_radius = max(r1, 500)
 
-    for rec in db:
-        d = _dist_m(lat, lon, rec["lat"], rec["lon"])
-        z = _zone(d, r3, r2, r1)
-        if z is None:
+    # ── 1. Base locale Maroc ──────────────────────────────────────────────────
+    local_sites = _local_hotspots(lat, lon, max_radius)
+
+    # ── 2. Overpass OSM temps réel ────────────────────────────────────────────
+    osm_elements = _query_overpass(lat, lon, max_radius)
+
+    # ── 3. Fusionner et déduplication ─────────────────────────────────────────
+    all_items = []
+
+    # Traiter éléments OSM
+    for el in osm_elements:
+        tags = el.get("tags", {})
+        if not tags:
             continue
-        icon, priority, risk = _TYPE_META.get(rec.get("type",""), _DEFAULT_META)
-        # Utiliser les données de la base (plus précises) si disponibles
-        zones[z].append({
-            "name":     rec["name"],
-            "type":     rec.get("type", "unknown"),
-            "icon":     rec.get("icon", icon),
-            "priority": rec.get("priority", priority),
-            "risk":     rec.get("risk", risk),
-            "coords":   [rec["lat"], rec["lon"]],
-            "dist":     int(d),
-            "zone":     z,
-            "city":     rec.get("city", "—"),
-            "source":   "HazMod Maroc DB",
+
+        # Coordonnées (node ou way/relation avec center)
+        if el.get("type") == "node":
+            elat, elon = el.get("lat", 0), el.get("lon", 0)
+        else:
+            center = el.get("center", {})
+            elat = center.get("lat", 0)
+            elon = center.get("lon", 0)
+
+        if not elat or not elon:
+            continue
+
+        dist = _haversine(lat, lon, elat, elon)
+        zone = _assign_zone(dist, r3, r2, r1)
+        if not zone:
+            continue
+
+        # Déduplication par coordonnées arrondies
+        coord_key = (round(elat, 4), round(elon, 4))
+        if coord_key in seen_coords:
+            continue
+        seen_coords.add(coord_key)
+
+        icon, priority, risk = _classify_element(tags)
+        name = _get_name(tags)
+        bear = _bearing(lat, lon, elat, elon)
+
+        all_items.append({
+            "name":     name,
+            "icon":     icon,
+            "priority": priority,
+            "risk":     risk,
+            "coords":   [round(elat, 5), round(elon, 5)],
+            "dist":     int(dist),
+            "bearing":  round(bear, 1),
+            "zone":     zone,
+            "source":   "osm",
+            "tags":     tags,
         })
 
-    total = sum(len(v) for v in zones.values())
-
-    # Trier par distance
-    for z in zones:
-        zones[z].sort(key=lambda x: x["dist"])
-        zones[z] = zones[z][:12]  # max 12 par zone
-
-    return zones, total
-
-# ── Requête Overpass (temps réel) ─────────────────────────────────────────────
-_OVERPASS_ENDPOINTS = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-    "https://overpass.openstreetmap.ru/api/interpreter",
-]
-
-def _query_overpass(lat: float, lon: float,
-                    r3: float, r2: float, r1: float) -> Optional[Dict]:
-    """Requête Overpass temps réel. Retourne None si indisponible."""
-    radius = int(r1 * 1.10) + 50
-    query = f"""
-[out:json][timeout:28];
-(
-  node["amenity"~"hospital|clinic|school|kindergarten|university|college|fire_station|police|pharmacy|bus_station|fuel|place_of_worship|social_facility|nursing_home|townhall|embassy|prison|marketplace|stadium|sports_centre|theatre|cinema|library|community_centre|social_centre|courthouse|post_office|bank|restaurant|bar|nightclub|conference_centre|refugee|shelter|blood_bank|daycare|veterinary|recycling|customs|border_control|swimming_pool|arts_centre|museum"](around:{radius},{lat},{lon});
-  node["shop"~"supermarket|mall"](around:{radius},{lat},{lon});
-  node["aeroway"~"aerodrome|terminal"](around:{radius},{lat},{lon});
-  node["railway"~"station|halt"](around:{radius},{lat},{lon});
-  node["military"](around:{radius},{lat},{lon});
-  node["landuse"="industrial"]["name"](around:{radius},{lat},{lon});
-  node["office"~"government|administration|diplomatic|ngo|association"](around:{radius},{lat},{lon});
-  node["tourism"~"hotel|hostel|camp_site|museum|theme_park"](around:{radius},{lat},{lon});
-  node["leisure"~"stadium|sports_centre|swimming_pool|park|beach_resort"](around:{radius},{lat},{lon});
-  node["man_made"~"water_tower|pumping_station|water_works|tower|lighthouse"](around:{radius},{lat},{lon});
-  node["power"~"substation|transformer|plant"](around:{radius},{lat},{lon});
-  node["public_transport"~"station|stop_position"](around:{radius},{lat},{lon});
-  way["office"~"government|administration"](around:{radius},{lat},{lon});
-  way["tourism"~"hotel|museum"](around:{radius},{lat},{lon});
-  way["leisure"~"stadium|sports_centre|swimming_pool"](around:{radius},{lat},{lon});
-  way["amenity"~"hospital|clinic|school|kindergarten|university|college|fire_station|police|stadium|theatre|cinema|library|community_centre|courthouse|conference_centre|museum|swimming_pool|arts_centre"](around:{radius},{lat},{lon});
-  way["landuse"="industrial"]["name"](around:{radius},{lat},{lon});
-  way["aeroway"="aerodrome"](around:{radius},{lat},{lon});
-);
-out center tags;
-""".strip()
-
-    encoded = urllib.parse.urlencode({"data": query}).encode("utf-8")
-    for ep in _OVERPASS_ENDPOINTS:
-        try:
-            req = urllib.request.Request(ep, data=encoded, headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent":   "HazMod-DSD/2.0 (direction.securite@interieur.gov.ma)",
-                "Accept":       "application/json",
-            })
-            with urllib.request.urlopen(req, timeout=28) as resp:
-                elements = json.loads(resp.read().decode()).get("elements", [])
-
-            zones: Dict[str, List[dict]] = {"ERPG-3": [], "ERPG-2": [], "ERPG-1": []}
-            seen: set = set()
-            for el in elements:
-                tags = el.get("tags", {})
-                name = (tags.get("name:fr") or tags.get("name") or
-                        tags.get("name:ar") or "").strip()
-                if not name or name.lower() in seen:
-                    continue
-                seen.add(name.lower())
-                if el["type"] == "node":
-                    elat, elon = el.get("lat"), el.get("lon")
-                else:
-                    c = el.get("center", {})
-                    elat, elon = c.get("lat"), c.get("lon")
-                if not elat:
-                    continue
-                d = _dist_m(lat, lon, elat, elon)
-                z = _zone(d, r3, r2, r1)
-                if not z:
-                    continue
-                loc_type = (tags.get("amenity") or tags.get("building") or
-                            tags.get("shop") or tags.get("leisure") or
-                            tags.get("aeroway") or tags.get("landuse") or
-                            tags.get("railway") or tags.get("military") or "unknown")
-                icon, priority, risk = _TYPE_META.get(loc_type, _DEFAULT_META)
-                zones[z].append({
-                    "name":     name[:55],
-                    "type":     loc_type,
-                    "icon":     icon,
-                    "priority": priority,
-                    "risk":     risk,
-                    "coords":   [round(elat,5), round(elon,5)],
-                    "dist":     int(d),
-                    "zone":     z,
-                    "city":     tags.get("addr:city","—"),
-                    "source":   "OpenStreetMap temps réel",
-                })
-
-            for z in zones:
-                zones[z].sort(key=lambda x: x["dist"])
-                zones[z] = zones[z][:12]
-            return zones
-        except Exception:
+    # Traiter base locale (priorité si pas déjà dans OSM)
+    for site in local_sites:
+        coord_key = (round(site["coords"][0], 4), round(site["coords"][1], 4))
+        if coord_key in seen_coords:
             continue
-    return None
+        seen_coords.add(coord_key)
 
-# ── Fallback géométrique ──────────────────────────────────────────────────────
-def _fallback_geo(lat: float, lon: float,
-                  r3: float, r2: float, r1: float,
-                  prop_dir: float) -> Dict:
-    """Hotspots géométriques si aucune donnée disponible."""
-    def mv(dist_m_v, bearing):
-        R = 6371000.0
-        lr = math.radians(lat); br = math.radians(bearing); dr = dist_m_v / R
-        nl = math.asin(math.sin(lr)*math.cos(dr)+math.cos(lr)*math.sin(dr)*math.cos(br))
-        nlo = math.radians(lon) + math.atan2(
-            math.sin(br)*math.sin(dr)*math.cos(lr),
-            math.cos(dr)-math.sin(lr)*math.sin(nl))
-        return [round(math.degrees(nl),5), round(math.degrees(nlo),5)]
+        dist = site["dist"]
+        zone = _assign_zone(dist, r3, r2, r1)
+        if not zone:
+            continue
 
-    pd = prop_dir
-    return {
-        "ERPG-3": [
-            {"name":"Zone industrielle proximate","icon":"🏭","priority":"CRITIQUE",
-             "risk":"Effet domino potentiel","coords":mv(int(r3*0.5),pd),
-             "dist":int(r3*0.5),"zone":"ERPG-3","source":"Géométrique"},
-            {"name":"Infrastructure routière","icon":"🛣️","priority":"ÉLEVÉ",
-             "risk":"Trafic bloqué","coords":mv(int(r3*0.85),(pd+30)%360),
-             "dist":int(r3*0.85),"zone":"ERPG-3","source":"Géométrique"},
-        ],
-        "ERPG-2": [
-            {"name":"Établissement de santé estimé","icon":"🏥","priority":"CRITIQUE",
-             "risk":"Population vulnérable","coords":mv(int((r3+r2)*0.4),pd),
-             "dist":int((r3+r2)*0.4),"zone":"ERPG-2","source":"Géométrique"},
-            {"name":"Zone résidentielle","icon":"🏘️","priority":"ÉLEVÉ",
-             "risk":"Population exposée","coords":mv(int(r2*0.7),(pd-20)%360),
-             "dist":int(r2*0.7),"zone":"ERPG-2","source":"Géométrique"},
-            {"name":"Établissement scolaire estimé","icon":"🏫","priority":"CRITIQUE",
-             "risk":"Enfants — Cl2 ×2","coords":mv(int(r2*0.85),(pd+25)%360),
-             "dist":int(r2*0.85),"zone":"ERPG-2","source":"Géométrique"},
-        ],
-        "ERPG-1": [
-            {"name":"Centre hospitalier estimé","icon":"🏥","priority":"ÉLEVÉ",
-             "risk":"Plan Blanc potentiel","coords":mv(int(r2+250),pd),
-             "dist":int(r2+250),"zone":"ERPG-1","source":"Géométrique"},
-            {"name":"Centre commercial estimé","icon":"🛒","priority":"ÉLEVÉ",
-             "risk":"Public dense","coords":mv(int(r2+500),(pd-15)%360),
-             "dist":int(r2+500),"zone":"ERPG-1","source":"Géométrique"},
-            {"name":"Équipement sportif estimé","icon":"🏟️","priority":"MODÉRÉ",
-             "risk":"Grande capacité","coords":mv(int(r1*0.75),(pd+12)%360),
-             "dist":int(r1*0.75),"zone":"ERPG-1","source":"Géométrique"},
-            {"name":"Gare / Transport estimé","icon":"🚌","priority":"ÉLEVÉ",
-             "risk":"Voyageurs exposés","coords":mv(int(r1*0.92),(pd-10)%360),
-             "dist":int(r1*0.92),"zone":"ERPG-1","source":"Géométrique"},
-        ],
-    }
+        bear = _bearing(lat, lon, site["coords"][0], site["coords"][1])
+        site["zone"] = zone
+        site["bearing"] = round(bear, 1)
+        all_items.append(site)
 
-# ── Point d'entrée principal ──────────────────────────────────────────────────
-def get_hotspots(lat: float, lon: float,
-                 r3: float, r2: float, r1: float,
-                 prop_dir: float,
-                 force_refresh: bool = False) -> Dict[str, List[dict]]:
-    """
-    Retourne les hotspots pour (lat, lon) classés par zone ERPG.
+    # ── 4. Tri par priorité puis distance ─────────────────────────────────────
+    _prio_rank = {"CRITIQUE": 0, "ÉLEVÉ": 1, "MODÉRÉ": 2, "FAIBLE": 3}
+    all_items.sort(key=lambda x: (_prio_rank.get(x["priority"], 3), x["dist"]))
 
-    Stratégie :
-      1. Cache 5 min (évite recalcul à chaque rerun Streamlit)
-      2. Base locale Maroc (instantané, ~120 entrées vérifiées)
-      3. Si zone non couverte OU hors Maroc → Overpass temps réel
-      4. Fallback géométrique si tout échoue
+    # ── 5. Répartition par zone ───────────────────────────────────────────────
+    for item in all_items:
+        zone = item.get("zone")
+        if zone in result:
+            result[zone].append(item)
 
-    Args :
-        lat, lon    : coordonnées GPS de la source
-        r3, r2, r1  : rayons ERPG-3, ERPG-2, ERPG-1 en mètres
-        prop_dir    : direction de propagation (degrés)
-        force_refresh : forcer nouvelle requête
-    """
-    cache_key = f"{lat:.3f}_{lon:.3f}_{int(r1)}"
-    now = time.time()
+    # ── 6. Fallback géométrique si aucun résultat ─────────────────────────────
+    if not any(result.values()):
+        result = _geometric_fallback(lat, lon, r3, r2, r1, prop_dir)
 
-    # Cache
-    if not force_refresh and cache_key in _CACHE:
-        if now - _CACHE[cache_key]["ts"] < _CACHE_TTL:
-            return _CACHE[cache_key]["data"]
-
-    # 1. Base locale Maroc
-    local_zones, local_count = _query_local(lat, lon, r3, r2, r1)
-
-    # Maroc bounding box : lat [20.7-36.0], lon [-17.1 à -1.0]
-    IS_MOROCCO = (20.7 <= lat <= 36.0) and (-17.1 <= lon <= -1.0)
-
-    if local_count > 0 and IS_MOROCCO:
-        # La base locale couvre — utiliser directement
-        _CACHE[cache_key] = {"ts": now, "data": local_zones,
-                              "source": "DB Maroc locale"}
-        return local_zones
-
-    # 2. Overpass temps réel (zones non couvertes ou hors Maroc)
-    overpass_result = _query_overpass(lat, lon, r3, r2, r1)
-    if overpass_result:
-        # Fusionner avec la base locale si Maroc
-        if IS_MOROCCO and local_count > 0:
-            merged: Dict[str, List[dict]] = {"ERPG-3":[],"ERPG-2":[],"ERPG-1":[]}
-            seen_names = set()
-            for z in ["ERPG-3","ERPG-2","ERPG-1"]:
-                for item in local_zones.get(z,[]) + overpass_result.get(z,[]):
-                    k = item["name"].lower()
-                    if k not in seen_names:
-                        seen_names.add(k)
-                        merged[z].append(item)
-                merged[z].sort(key=lambda x: x["dist"])
-                merged[z] = merged[z][:12]
-            _CACHE[cache_key] = {"ts": now, "data": merged,
-                                  "source": "DB Maroc + OSM temps réel"}
-            return merged
-
-        _CACHE[cache_key] = {"ts": now, "data": overpass_result,
-                              "source": "OSM temps réel"}
-        return overpass_result
-
-    # 3. Fallback géométrique
-    if local_count > 0:
-        _CACHE[cache_key] = {"ts": now, "data": local_zones,
-                              "source": "DB Maroc locale (partielle)"}
-        return local_zones
-
-    result = _fallback_geo(lat, lon, r3, r2, r1, prop_dir)
-    _CACHE[cache_key] = {"ts": now, "data": result, "source": "Géométrique"}
     return result
 
-def get_db_stats() -> dict:
-    """Retourne des statistiques sur la base locale."""
-    db = _load_local_db()
-    from collections import Counter
+
+def _geometric_fallback(lat, lon, r3, r2, r1, prop_dir) -> Dict[str, List[dict]]:
+    """
+    Fallback : génère des points types le long de l'axe de dispersion.
+    Utilisé quand OSM et la base locale ne retournent rien.
+    """
+    def geo_point(d, bearing):
+        R = 6371000.0
+        lat_r = math.radians(lat)
+        br = math.radians(bearing)
+        dr = d / R
+        nlat = math.asin(math.sin(lat_r)*math.cos(dr) +
+                         math.cos(lat_r)*math.sin(dr)*math.cos(br))
+        nlon = math.radians(lon) + math.atan2(
+            math.sin(br)*math.sin(dr)*math.cos(lat_r),
+            math.cos(dr) - math.sin(lat_r)*math.sin(nlat))
+        return round(math.degrees(nlat), 5), round(math.degrees(nlon), 5)
+
+    result = {"ERPG-3": [], "ERPG-2": [], "ERPG-1": []}
+
+    templates = [
+        ("ERPG-3", r3*0.6,  "🏥", "CRITIQUE", "Zone de danger vital — établissement critique probable"),
+        ("ERPG-3", r3*0.9,  "🏫", "CRITIQUE", "Zone de danger vital — école ou rassemblement possible"),
+        ("ERPG-2", r2*0.55, "🏋", "ÉLEVÉ",    "Zone d'effets irréversibles — complexe sportif probable"),
+        ("ERPG-2", r2*0.80, "🏘", "MODÉRÉ",   "Zone d'effets irréversibles — zone habitée"),
+        ("ERPG-1", r1*0.50, "🕌", "ÉLEVÉ",    "Zone d'irritation — lieu de culte ou rassemblement"),
+        ("ERPG-1", r1*0.80, "🏬", "MODÉRÉ",   "Zone d'irritation — commerce ou administration"),
+    ]
+
+    for i, (zone, dist, icon, prio, risk) in enumerate(templates):
+        bear = (prop_dir + (i * 15 - 30)) % 360
+        clat, clon = geo_point(max(dist, 10), bear)
+        result[zone].append({
+            "name":     f"Zone sensible estimée ({zone})",
+            "icon":     icon,
+            "priority": prio,
+            "risk":     risk,
+            "coords":   [clat, clon],
+            "dist":     int(dist),
+            "bearing":  round(bear, 1),
+            "zone":     zone,
+            "source":   "geometrique",
+            "tags":     {},
+        })
+
+    return result
+
+
+# ── Statistiques pour debug ───────────────────────────────────────────────────
+def get_stats(result: dict) -> dict:
+    total = sum(len(v) for v in result.values())
+    by_prio = {}
+    for items in result.values():
+        for it in items:
+            p = it.get("priority", "MODÉRÉ")
+            by_prio[p] = by_prio.get(p, 0) + 1
     return {
-        "total":        len(db),
-        "path":         _LOCAL_DB_PATH or "Non trouvé",
-        "by_type":      dict(Counter(r.get("type","?") for r in db)),
-        "by_priority":  dict(Counter(r.get("priority","?") for r in db)),
-        "cache_entries": len(_CACHE),
+        "total": total,
+        "by_zone": {k: len(v) for k, v in result.items()},
+        "by_priority": by_prio,
     }
