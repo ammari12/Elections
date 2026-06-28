@@ -323,6 +323,7 @@ except NameError:
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
 
@@ -478,6 +479,140 @@ html,body,[class*="css"] { font-family:var(--sans)!important; color:var(--tx1); 
 hr { border-color:var(--border)!important; margin:.5rem 0!important; }
 
 .sc-footer { margin-top:2rem; padding:1rem 0 .5rem; border-top:1px solid var(--border); text-align:center; font-size:.67rem; color:var(--tx3); font-family:var(--mono); letter-spacing:.04em; }
+
+/* ══ RESPONSIVE MOBILE — PWA-ready ═══════════════════════════ */
+@media screen and (max-width: 900px) {
+  /* Base layout */
+  .block-container {
+    padding: 0.4rem 0.4rem 1rem !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  section[data-testid="stMain"] { overflow-x: hidden !important; }
+
+  /* Header */
+  .sc-header-body { padding: 0.7rem 0.8rem 0.8rem !important; }
+  .sc-header-body h1 { font-size: 1.3rem !important; letter-spacing: .08em !important; }
+  .sc-header-body .sub { font-size: .72rem !important; }
+  .sc-badges { gap: 3px !important; flex-wrap: wrap !important; }
+  .sc-badge { font-size: .56rem !important; padding: 2px 5px !important; }
+
+  /* Tabs — scrollable horizontal sans wrapping */
+  [data-testid="stTabs"] [role="tablist"] {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 0 !important;
+    padding-bottom: 2px !important;
+  }
+  [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar { display: none !important; }
+  [data-testid="stTabs"] button[role="tab"] {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: .56rem !important;
+    padding: .45rem .6rem !important;
+    min-width: auto !important;
+  }
+
+  /* Colonnes Streamlit — stack vertical sur mobile */
+  [data-testid="stHorizontalBlock"] {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  [data-testid="column"] {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: none !important;
+  }
+
+  /* Graphiques Plotly */
+  [data-testid="stPlotlyChart"] {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+  [data-testid="stPlotlyChart"] > div {
+    width: 100% !important;
+  }
+
+  /* Cartes Folium / iframes */
+  iframe {
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  /* KPI cards */
+  .kpi-card {
+    padding: 0.6rem 0.75rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+
+  /* Hotspot cards */
+  .hs-card { padding: 8px 10px !important; }
+  .hs-item {
+    grid-template-columns: 22px 1fr auto !important;
+    gap: 5px !important;
+    font-size: .74rem !important;
+    padding: 5px 0 !important;
+  }
+  .hs-conc { font-size: .65rem !important; }
+
+  /* DataFrames */
+  [data-testid="stDataFrame"] {
+    font-size: .70rem !important;
+    overflow-x: auto !important;
+    width: 100% !important;
+  }
+
+  /* Boutons */
+  [data-testid="baseButton-primary"],
+  [data-testid="baseButton-secondary"] {
+    font-size: .68rem !important;
+    padding: .4rem .7rem !important;
+    width: 100% !important;
+  }
+
+  /* Sidebar */
+  [data-testid="stSidebar"] {
+    min-width: 270px !important;
+    max-width: 85vw !important;
+  }
+  [data-testid="stSidebar"] .stSlider { font-size: .75rem !important; }
+
+  /* Textes section */
+  .sc-section {
+    font-size: .65rem !important;
+    letter-spacing: .07em !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Bandeaux */
+  .hs-banner { padding: 12px 14px !important; }
+  .hs-banner h3 { font-size: .9rem !important; }
+  .hs-banner p { font-size: .72rem !important; }
+
+  /* Alertes */
+  [data-testid="stAlert"] { font-size: .78rem !important; }
+
+  /* Numéros inputs */
+  [data-testid="stNumberInput"] { font-size: .78rem !important; }
+
+  /* Selectboxes */
+  [data-testid="stSelectbox"] { font-size: .78rem !important; }
+}
+
+@media screen and (max-width: 480px) {
+  .sc-header-body h1 { font-size: 1.05rem !important; }
+  .block-container { padding: 0.25rem 0.25rem 0.6rem !important; }
+  [data-testid="stTabs"] button[role="tab"] {
+    font-size: .50rem !important;
+    padding: .4rem .5rem !important;
+  }
+  .kpi-card { padding: 0.5rem !important; }
+  [data-testid="stSidebar"] { max-width: 92vw !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -921,10 +1056,27 @@ with st.sidebar:
 
     # ── Champs coordonnées ────────────────────────────────────────────────────
     _c1, _c2 = st.columns(2)
-    lat = _c1.number_input("Lat", value=st.session_state.get("map_lat", 33.9716),
+    _default_lat = st.session_state.get("map_lat", 33.9716)
+    _default_lon = st.session_state.get("map_lon", -6.8498)
+    lat = _c1.number_input("Lat", value=float(_default_lat),
                             format="%.4f", key="lat_input")
-    lon = _c2.number_input("Lon", value=st.session_state.get("map_lon", -6.8498),
+    lon = _c2.number_input("Lon", value=float(_default_lon),
                             format="%.4f", key="lon_input")
+
+    # ── Bouton déplacement source sur carte ───────────────────────────────────
+    _move_active = st.session_state.get("move_source_mode", False)
+    _btn_label   = "🎯 Cliquez sur la carte pour placer la source..." if _move_active else "📍 Déplacer la source sur la carte"
+    _btn_style   = "primary" if _move_active else "secondary"
+    if st.button(_btn_label, key="btn_move_source", use_container_width=True,
+                 type=_btn_style):
+        st.session_state["move_source_mode"] = not _move_active
+        st.rerun()
+    if _move_active:
+        st.markdown(
+            "<div style='background:#FEF3C7;border:1px solid #F59E0B;border-radius:6px;"
+            "padding:6px 10px;font-size:.75rem;color:#92400E;margin-top:4px;'>"
+            "🟡 Mode actif — cliquez n'importe où sur la carte principale</div>",
+            unsafe_allow_html=True)
 
     # ── 12 Régions du Maroc + villes ─────────────────────────────────────────
     _REGIONS_MAROC = {
@@ -965,8 +1117,9 @@ with st.sidebar:
                     round(_vlon,4) != st.session_state.get("map_lon")):
                 st.session_state["map_lat"] = round(_vlat,4)
                 st.session_state["map_lon"] = round(_vlon,4)
-                st.session_state["lat_input"] = round(_vlat,4)
-                st.session_state["lon_input"] = round(_vlon,4)
+                # Ne pas écrire directement dans lat_input/lon_input
+                # (widget déjà rendu) — on passe par map_lat/map_lon
+                # et on force un rerun pour que les widgets se mettent à jour
                 st.rerun()
 
     st.divider()
@@ -1871,87 +2024,126 @@ with tab1:
             map.getPanes().overlayPane.appendChild(cv);
             var ctx = cv.getContext('2d');
 
-            /* ── Particules ───────────────────────────────────── */
-            var N=220, t=0, pts=[];
-            for(var i=0;i<N;i++) pts.push({age:Math.random()*14, id:i});
+            /* ── Particules gaussiennes synchronisées ERPG ───── */
+            var N=280, t=0, pts=[];
+            for(var i=0;i<N;i++) pts.push({
+              age: Math.random()*16,
+              id:  i,
+              s1: ((Math.sin((i*127.1+1)*0.01)*43758.5)%1+1)%1,
+              s2: ((Math.sin((i*311.7+2)*0.01)*43758.5)%1+1)%1
+            });
 
+            /* Conversion mètres → pixels selon zoom courant */
             function m2px(meters){
               var mpp=156543.03*Math.cos(LAT*Math.PI/180)/Math.pow(2,map.getZoom());
               return meters/mpp;
             }
 
+            /* Arc du cône pour clip gaussien */
+            function coneClip(ctx, sx, sy, R1px, ang, halfAng){
+              ctx.beginPath();
+              ctx.moveTo(sx, sy);
+              var steps=60;
+              for(var k=0;k<=steps;k++){
+                var a = ang + (k/steps - 0.5)*2*halfAng;
+                ctx.lineTo(sx + R1px*1.08*Math.cos(a), sy + R1px*1.08*Math.sin(a));
+              }
+              ctx.closePath();
+            }
+
             function draw(){
-              var sz=map.getSize();
-              cv.width=sz.x; cv.height=sz.y;
+              /* Taille canvas = taille visible de la carte */
+              var sz = map.getSize();
+              if(cv.width !== sz.x)  cv.width  = sz.x;
+              if(cv.height !== sz.y) cv.height = sz.y;
               ctx.clearRect(0,0,cv.width,cv.height);
 
-              var src=map.latLngToContainerPoint([LAT,LON]);
-              var R1px=m2px(R1);
+              /* Source toujours recalculée en coordonnées écran */
+              var src   = map.latLngToContainerPoint([LAT, LON]);
+              var sx = src.x, sy = src.y;
 
-              /* angle canvas: 0=Est, PDIR géo 0=N,90=E */
-              var ang=(90-PDIR)*Math.PI/180;
-              var ca=Math.cos(ang), sa=Math.sin(ang);
+              /* Rayons en pixels */
+              var R1px = m2px(R1);
+              var R2px = m2px(R2);
+              var R3px = m2px(R3);
 
-              t+=0.016*ASPD;
+              /* Direction de propagation :
+                 PDIR = (dir_vent + 180) % 360 (en degrés géo, 0=N, 90=E)
+                 En canvas : x=Est, y=Sud → angle = -(PDIR - 90) * PI/180   */
+              var ang = (PDIR - 90) * Math.PI / 180; /* 0=N,90=E→canvas x=E,y=S */
+              var ca  = Math.cos(ang), sa = Math.sin(ang);
+              var halfAng = (0.52 + SP*0.08); /* ~35° pour D, +large pour A */
 
+              t += 0.016 * ASPD;
+
+              /* ── Clip en forme de cône gaussien ─────────────────── */
+              ctx.save();
+              coneClip(ctx, sx, sy, R1px, ang, halfAng);
+              ctx.clip();
+
+              /* ── Particules ─────────────────────────────────────── */
               for(var i=0;i<N;i++){
-                var p=pts[i];
-                p.age+=0.016*ASPD;
-                if(p.age>14) p.age=0;
+                var p = pts[i];
+                p.age += 0.016 * ASPD;
+                if(p.age > 16) p.age = 0;
 
-                var fr=p.age/14;
-                var along=fr*R1px;
-                /* sigma: étalement gaussien calibré sur ERPG-2/ERPG-1 */
-              var sigma=R1px*0.04*SP*(0.4+fr*1.8);
+                var fr    = p.age / 16;
+                var along = fr * R1px;
 
-                var s1=((Math.sin((p.id*127.1+1)*0.01)*43758.5)%1+1)%1;
-                var s2=((Math.sin((p.id*311.7+2)*0.01)*43758.5)%1+1)%1;
+                /* Étalement latéral calibré sur les rayons ERPG */
+                var sigma_ref = (fr < 0.145) ? R3px*0.38
+                              : (fr < 0.50)  ? R2px*0.32
+                              :                R1px*0.28;
+                var sigma = sigma_ref * SP * (0.3 + fr * 1.4);
 
-                var lat_off=(s1-0.5)*2*sigma+Math.sin(t*1.1+p.id*0.4)*sigma*0.3;
-                var px=src.x+along*ca-lat_off*sa;
-                var py=src.y+along*sa+lat_off*ca;
-                var pr=(4+fr*22)*(0.7+s2*0.6);
+                var lat_off = (p.s1-0.5)*2*sigma
+                            + Math.sin(t*1.1 + p.id*0.4)*sigma*0.25;
+                var px = sx + along*ca - lat_off*sa;
+                var py = sy + along*sa + lat_off*ca;
+                var pr = (3 + fr*20) * (0.7 + p.s2*0.6);
 
-                var decay=Math.max(0.03,1-fr*0.85);
-                var ramp=Math.min(1,p.age*1.6);
-                var al=AINT*0.24*decay*ramp;
-                if(al<0.005) continue;
+                var decay = Math.max(0.02, 1 - fr*0.82);
+                var ramp  = Math.min(1, p.age*1.8);
+                var al    = AINT * 0.28 * decay * ramp;
+                if(al < 0.004) continue;
 
-                var rr=Math.round(215+fr*40);
-                var gg=Math.round(228-fr*38);
-                var bb=Math.round(10+fr*18);
+                /* Couleur : jaune-vert dense → jaune pâle au bord */
+                var rr = Math.round(200 + fr*55);
+                var gg = Math.round(220 - fr*30);
+                var bb = Math.round(5   + fr*20);
 
                 try{
-                  var g=ctx.createRadialGradient(px,py,0,px,py,pr);
-                  g.addColorStop(0,'rgba('+rr+','+gg+','+bb+','+al+')');
-                  g.addColorStop(0.5,'rgba('+rr+','+gg+','+bb+','+(al*0.5)+')');
-                  g.addColorStop(1,'rgba('+rr+','+gg+','+bb+',0)');
-                  ctx.beginPath(); ctx.arc(px,py,pr,0,Math.PI*2);
-                  ctx.fillStyle=g; ctx.fill();
+                  var g = ctx.createRadialGradient(px,py,0,px,py,pr);
+                  g.addColorStop(0,   'rgba('+rr+','+gg+','+bb+','+al+')');
+                  g.addColorStop(0.45,'rgba('+rr+','+gg+','+bb+','+(al*0.55)+')');
+                  g.addColorStop(1,   'rgba('+rr+','+gg+','+bb+',0)');
+                  ctx.beginPath();
+                  ctx.arc(px, py, pr, 0, Math.PI*2);
+                  ctx.fillStyle = g;
+                  ctx.fill();
                 }catch(e){}
               }
+              ctx.restore();
 
-              /* ── Halo source ──────────────────────────────────── */
-              var hr=Math.max(18,m2px(R3*0.18));
-              var hg=ctx.createRadialGradient(src.x,src.y,0,src.x,src.y,hr);
-              hg.addColorStop(0,'rgba(255,200,0,0.75)');
-              hg.addColorStop(0.4,'rgba(255,130,0,0.35)');
-              hg.addColorStop(1,'rgba(255,60,0,0)');
-              ctx.beginPath(); ctx.arc(src.x,src.y,hr,0,Math.PI*2);
-              ctx.fillStyle=hg; ctx.fill();
+              /* ── Halo orange à la source ─────────────────────── */
+              var hr = Math.max(16, R3px*0.22);
+              var hg = ctx.createRadialGradient(sx,sy,0,sx,sy,hr);
+              hg.addColorStop(0,   'rgba(255,210,0,0.85)');
+              hg.addColorStop(0.35,'rgba(255,140,0,0.45)');
+              hg.addColorStop(1,   'rgba(255,60,0,0)');
+              ctx.beginPath();
+              ctx.arc(sx, sy, hr, 0, Math.PI*2);
+              ctx.fillStyle = hg;
+              ctx.fill();
 
               requestAnimationFrame(draw);
             }
 
-            /* ── Recalage canvas lors du déplacement / zoom ─────── */
-            function resizeCanvas(){
+            /* ── Ancrage parfait lors du déplacement / zoom ──── */
+            map.on('move zoom moveend zoomend resize', function(){
               var sz=map.getSize();
               cv.width=sz.x; cv.height=sz.y;
-            }
-            map.on('move zoom moveend zoomend resize', function(){
-              resizeCanvas();
             });
-            resizeCanvas();
 
             requestAnimationFrame(draw);
             })();
@@ -1968,18 +2160,17 @@ with tab1:
             returned_objects=["last_clicked", "bounds", "zoom"]
         )
 
-        # ── Clic sur la carte → déplace instantanément la source ─────────────
-        if map_data and map_data.get("last_clicked"):
+        # ── Clic sur la carte → déplace la source UNIQUEMENT si mode déplacement activé
+        _move_mode = st.session_state.get("move_source_mode", False)
+        if map_data and map_data.get("last_clicked") and _move_mode:
             cl = map_data["last_clicked"]
             new_lat, new_lon = round(cl["lat"], 4), round(cl["lng"], 4)
             if (new_lat != st.session_state.get("map_lat") or
                     new_lon != st.session_state.get("map_lon")):
                 st.session_state["map_lat"] = new_lat
                 st.session_state["map_lon"] = new_lon
-                # Synchroniser les champs GPS sidebar
-                st.session_state["lat_input"] = new_lat
-                st.session_state["lon_input"] = new_lon
-                # Vider le cache hotspots pour forcer recalcul
+                # Désactiver le mode déplacement après 1 clic
+                st.session_state["move_source_mode"] = False
                 if hasattr(_get_hotspots_cached, "clear"):
                     _get_hotspots_cached.clear()
                 st.rerun()
