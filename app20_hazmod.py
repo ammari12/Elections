@@ -2646,15 +2646,29 @@ with tab5:
     if df is None:
         df = pd.DataFrame()
     st.markdown('<p class="sc-section">📚 BASE DE DONNÉES — 81 ACCIDENTS AU CHLORE (1929–2022)</p>', unsafe_allow_html=True)
-    cf1,cf2,cf3 = st.columns(3)
-    with cf1: pays_f = st.multiselect("Pays", sorted(df["Pays"].dropna().unique()))
-    with cf2: type_f = st.multiselect("Type libération", df["Type_libération"].dropna().unique())
-    with cf3: yr = st.slider("Période", int(df["Année"].min()), int(df["Année"].max()), (1975,2023))
-    dfF = df.copy()
-    if pays_f: dfF = dfF[dfF["Pays"].isin(pays_f)]
-    if type_f: dfF = dfF[dfF["Type_libération"].isin(type_f)]
-    dfF = dfF[dfF["Année"].between(*yr)]
-    st.caption(f"**{len(dfF)}** accidents affichés sur 81")
+
+    # Vérification que les colonnes existent avant de les utiliser
+    _has_pays   = "Pays" in df.columns and not df.empty
+    _has_type   = "Type_libération" in df.columns and not df.empty
+    _has_annee  = "Année" in df.columns and not df.empty
+
+    if not _has_pays:
+        st.warning("⚠️ Données non disponibles — vérifiez le fichier `data/accidents_chlore_rectifie.xlsx`.")
+    else:
+        cf1,cf2,cf3 = st.columns(3)
+        with cf1: pays_f = st.multiselect("Pays", sorted(df["Pays"].dropna().unique()) if _has_pays else [])
+        with cf2: type_f = st.multiselect("Type libération", df["Type_libération"].dropna().unique() if _has_type else [])
+        _yr_min = int(df["Année"].min()) if _has_annee else 1929
+        _yr_max = int(df["Année"].max()) if _has_annee else 2023
+        with cf3: yr = st.slider("Période", _yr_min, _yr_max, (1975, min(2023, _yr_max)))
+        dfF = df.copy()
+        if pays_f: dfF = dfF[dfF["Pays"].isin(pays_f)]
+        if type_f: dfF = dfF[dfF["Type_libération"].isin(type_f)]
+        if _has_annee: dfF = dfF[dfF["Année"].between(*yr)]
+        st.caption(f"**{len(dfF)}** accidents affichés sur 81")
+
+    if not _has_pays:
+        st.stop()
 
     col_v1, col_v2 = st.columns(2)
     with col_v1:
