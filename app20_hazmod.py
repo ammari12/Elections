@@ -857,7 +857,10 @@ def _get_ml_ready():
         df = load_data()
         models = train_models(df)
         return df, models
-    except Exception:
+    except Exception as e:
+        import traceback
+        print(f"[HazMod] Erreur chargement données: {e}")
+        print(traceback.format_exc())
         return None, {}
 
 # Pré-charge en arrière-plan dès la première exécution
