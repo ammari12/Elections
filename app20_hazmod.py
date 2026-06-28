@@ -875,8 +875,8 @@ with st.sidebar:
     st.markdown("**📍 Localisation de l'incident**")
 
     # ── Mini carte Google Satellite sidebar ───────────────────────────────────
-    _sb_lat = st.session_state.get("map_lat", 33.1167)
-    _sb_lon = st.session_state.get("map_lon", -8.6333)
+    _sb_lat = st.session_state.get("map_lat", 33.9716)
+    _sb_lon = st.session_state.get("map_lon", -6.8498)
     _sb_map = folium.Map(
         location=[_sb_lat, _sb_lon], zoom_start=13,
         tiles="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",  # satellite pur sans étiquettes
@@ -921,26 +921,54 @@ with st.sidebar:
 
     # ── Champs coordonnées ────────────────────────────────────────────────────
     _c1, _c2 = st.columns(2)
-    lat = _c1.number_input("Lat", value=st.session_state.get("map_lat", 33.1167),
+    lat = _c1.number_input("Lat", value=st.session_state.get("map_lat", 33.9716),
                             format="%.4f", key="lat_input")
-    lon = _c2.number_input("Lon", value=st.session_state.get("map_lon", -8.6333),
+    lon = _c2.number_input("Lon", value=st.session_state.get("map_lon", -6.8498),
                             format="%.4f", key="lon_input")
 
-    # ── Villes rapides ────────────────────────────────────────────────────────
+    # ── 12 Régions du Maroc + villes ─────────────────────────────────────────
+    _REGIONS_MAROC = {
+        "— Choisir une région —": {},
+        "🏙 Rabat-Salé-Kénitra":       {"Rabat": (33.9716,-6.8498), "Salé": (34.0531,-6.7985), "Kénitra": (34.2610,-6.5802), "Khémisset": (33.8241,-6.0659), "Sidi Kacem": (34.2219,-5.7103)},
+        "🌊 Casablanca-Settat":         {"Casablanca": (33.5731,-7.5898), "Mohammedia": (33.6866,-7.3833), "Settat": (33.0019,-7.6217), "Berrechid": (33.2657,-7.5858), "Jorf Lasfar": (33.1167,-8.6333)},
+        "🏔 Fès-Meknès":                {"Fès": (34.0209,-5.0078), "Meknès": (33.8935,-5.5473), "Ifrane": (33.5228,-5.1073), "Taza": (34.2100,-3.9900), "Boulemane": (33.3667,-4.7333)},
+        "🌄 Marrakech-Safi":            {"Marrakech": (31.6295,-7.9811), "Safi": (32.2994,-9.2372), "Essaouira": (31.5085,-9.7595), "El Kelaa": (32.0500,-7.4000), "Youssoufia": (32.2500,-8.5333)},
+        "🏜 Souss-Massa":               {"Agadir": (30.4278,-9.5981), "Tiznit": (29.6974,-9.7316), "Taroudant": (30.4728,-8.8781), "Inezgane": (30.3583,-9.5333), "Ait Melloul": (30.3333,-9.5000)},
+        "🌿 Tanger-Tétouan-Al Hoceïma": {"Tanger": (35.7595,-5.8340), "Tétouan": (35.5785,-5.3684), "Al Hoceïma": (35.2517,-3.9372), "Larache": (35.1932,-6.1557), "Chefchaouen": (35.1688,-5.2636)},
+        "🏖 Oriental":                  {"Oujda": (34.6867,-1.9114), "Nador": (35.1681,-2.9287), "Berkane": (34.9200,-2.3200), "Taourirt": (34.4092,-2.8939), "Jerada": (34.3167,-2.1667)},
+        "🌾 Béni Mellal-Khénifra":      {"Béni Mellal": (32.3373,-6.3498), "Khénifra": (32.9333,-5.6667), "Azilal": (31.9667,-6.5667), "Fquih Ben Salah": (32.5000,-6.7000), "Souk Sebt": (32.5500,-6.7167)},
+        "🏝 Laâyoune-Sakia El Hamra":   {"Laâyoune": (27.1536,-13.2033), "Boujdour": (26.1250,-14.4850), "Tarfaya": (27.9377,-12.9178), "Smara": (26.7320,-11.6757)},
+        "🌵 Dakhla-Oued Ed-Dahab":      {"Dakhla": (23.6848,-15.9570), "Aousserd": (22.5590,-14.3289)},
+        "🏔 Drâa-Tafilalet":            {"Errachidia": (31.9319,-4.4244), "Ouarzazate": (30.9335,-6.9370), "Zagora": (30.3300,-5.8400), "Tinghir": (31.5144,-5.5241), "Midelt": (32.6833,-4.7333)},
+        "🌊 Guelmim-Oued Noun":         {"Guelmim": (28.9870,-10.0574), "Tan-Tan": (28.4380,-11.1031), "Sidi Ifni": (29.3794,-10.1728), "Assa": (28.6038,-9.4285)},
+    }
+
     st.markdown(
-        "<div style='font-size:10px;color:#888;margin:2px 0;'>"
-        "📍 Scénarios de test rapide</div>",
+        "<div style=\'font-size:10px;color:#888;margin:4px 0 2px;\'>"
+        "🗺️ Navigation par région</div>",
         unsafe_allow_html=True)
-    _vc = st.columns(3)
-    for _ci, (_cn, _cl, _clo) in enumerate([
-        ("Tanger",    35.7595, -5.8340),
-        ("Jorf Lasfar", 33.1167, -8.6333),
-        ("Kenitra",   34.2610, -6.5802),
-    ]):
-        if _vc[_ci].button(_cn, key=f"city_{_cn}", use_container_width=True):
-            st.session_state["map_lat"] = _cl
-            st.session_state["map_lon"] = _clo
-            st.rerun()
+
+    _reg_sel = st.selectbox(
+        "Région", list(_REGIONS_MAROC.keys()), index=0,
+        key="region_sel", label_visibility="collapsed"
+    )
+    if _reg_sel != "— Choisir une région —":
+        _villes_reg = _REGIONS_MAROC[_reg_sel]
+        _ville_sel = st.selectbox(
+            "Ville",
+            ["— Choisir une ville —"] + list(_villes_reg.keys()),
+            key="ville_sel", label_visibility="collapsed"
+        )
+        if _ville_sel != "— Choisir une ville —":
+            _vlat, _vlon = _villes_reg[_ville_sel]
+            if (round(_vlat,4) != st.session_state.get("map_lat") or
+                    round(_vlon,4) != st.session_state.get("map_lon")):
+                st.session_state["map_lat"] = round(_vlat,4)
+                st.session_state["map_lon"] = round(_vlon,4)
+                st.session_state["lat_input"] = round(_vlat,4)
+                st.session_state["lon_input"] = round(_vlon,4)
+                st.rerun()
+
     st.divider()
     st.markdown("**☢ Source de Chlore**")
     Q_kg = st.number_input("Quantité Cl₂ libérée (kg)", 10.0, 100000.0, 9000.0, 100.0)
@@ -1098,8 +1126,8 @@ with st.sidebar:
 # ── Coordonnées : initialisation session_state ────────────────────────────────
 if "map_lat" not in st.session_state:
     # Valeur par défaut = Jorf Lasfar (port chimique, Maroc)
-    st.session_state["map_lat"] = 33.1167
-    st.session_state["map_lon"] = -8.6333
+    st.session_state["map_lat"] = 33.9716
+    st.session_state["map_lon"] = -6.8498
 
 # ── Calculs primaires ─────────────────────────────────────────────────────────
 Q_kgs = q_debit_kgs(Q_kg, duree_min, type_lib)   # débit effectif en kg/s
@@ -1873,7 +1901,8 @@ with tab1:
 
                 var fr=p.age/14;
                 var along=fr*R1px;
-                var sigma=R1px*0.05*SP*(0.5+fr*2.0);
+                /* sigma: étalement gaussien calibré sur ERPG-2/ERPG-1 */
+              var sigma=R1px*0.04*SP*(0.4+fr*1.8);
 
                 var s1=((Math.sin((p.id*127.1+1)*0.01)*43758.5)%1+1)%1;
                 var s2=((Math.sin((p.id*311.7+2)*0.01)*43758.5)%1+1)%1;
@@ -1914,11 +1943,15 @@ with tab1:
               requestAnimationFrame(draw);
             }
 
-            /* repositionner quand la carte bouge */
-            map.on('move zoom moveend zoomend', function(){
-              var tf=map.getPanes().mapPane.style.transform||'';
-              cv.style.transform='';
+            /* ── Recalage canvas lors du déplacement / zoom ─────── */
+            function resizeCanvas(){
+              var sz=map.getSize();
+              cv.width=sz.x; cv.height=sz.y;
+            }
+            map.on('move zoom moveend zoomend resize', function(){
+              resizeCanvas();
             });
+            resizeCanvas();
 
             requestAnimationFrame(draw);
             })();
