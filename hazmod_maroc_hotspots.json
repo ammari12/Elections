@@ -1,0 +1,1299 @@
+{
+  "version": "2.0",
+  "date": "2026-06",
+  "source": "HOTOSM / HDX / OSM / Sources officielles Maroc",
+  "license": "ODbL 1.0 — OpenStreetMap contributors",
+  "total": 129,
+  "features": [
+    {
+      "name": "Hôpital Ibn Sina",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital universitaire — 1200 lits",
+      "lat": 33.9921,
+      "lon": -6.8499,
+      "city": "Rabat"
+    },
+    {
+      "name": "Hôpital Cheikh Zaïd",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "CHU — soins intensifs",
+      "lat": 33.9733,
+      "lon": -6.8543,
+      "city": "Rabat"
+    },
+    {
+      "name": "Hôpital Militaire Mohammed V",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital militaire — protocole interne",
+      "lat": 33.969,
+      "lon": -6.864,
+      "city": "Rabat"
+    },
+    {
+      "name": "Hôpital d'Enfants de Rabat",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Pédiatrie — population vulnérable",
+      "lat": 33.984,
+      "lon": -6.861,
+      "city": "Rabat"
+    },
+    {
+      "name": "Clinique Agdal",
+      "type": "clinic",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Clinique privée",
+      "lat": 33.982,
+      "lon": -6.872,
+      "city": "Rabat"
+    },
+    {
+      "name": "CHU Ibn Rochd",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "CHU Casablanca — 1800 lits",
+      "lat": 33.5731,
+      "lon": -7.5898,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Hôpital Moulay Youssef — Casablanca",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital général",
+      "lat": 33.59,
+      "lon": -7.61,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Hôpital 20 Août 1953",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 33.56,
+      "lon": -7.62,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Clinique du Littoral",
+      "type": "clinic",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Clinique privée",
+      "lat": 33.595,
+      "lon": -7.632,
+      "city": "Casablanca"
+    },
+    {
+      "name": "CHU Mohammed VI Marrakech",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "CHU — trauma et urgences",
+      "lat": 31.6295,
+      "lon": -7.9811,
+      "city": "Marrakech"
+    },
+    {
+      "name": "Hôpital Ibn Nafis",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 31.61,
+      "lon": -8.01,
+      "city": "Marrakech"
+    },
+    {
+      "name": "CHU Mohammed VI Tanger",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "CHU — 800 lits",
+      "lat": 35.7595,
+      "lon": -5.834,
+      "city": "Tanger"
+    },
+    {
+      "name": "Hôpital Militaire Tanger",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital militaire",
+      "lat": 35.78,
+      "lon": -5.81,
+      "city": "Tanger"
+    },
+    {
+      "name": "CHU Hassan II Fès",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "CHU — 1400 lits",
+      "lat": 34.0209,
+      "lon": -5.0078,
+      "city": "Fès"
+    },
+    {
+      "name": "Hôpital Ghassani",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 34.01,
+      "lon": -4.99,
+      "city": "Fès"
+    },
+    {
+      "name": "CHU Souss-Massa Agadir",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "CHU Agadir",
+      "lat": 30.4278,
+      "lon": -9.5981,
+      "city": "Agadir"
+    },
+    {
+      "name": "Hôpital Hassan II Agadir",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 30.42,
+      "lon": -9.58,
+      "city": "Agadir"
+    },
+    {
+      "name": "Hôpital Mohammed V Meknès",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 33.8935,
+      "lon": -5.5547,
+      "city": "Meknès"
+    },
+    {
+      "name": "CHU Mohammed VI Oujda",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "CHU région orientale",
+      "lat": 34.6867,
+      "lon": -1.9114,
+      "city": "Oujda"
+    },
+    {
+      "name": "Hôpital Mohammed V El Jadida",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 33.2333,
+      "lon": -8.5,
+      "city": "El Jadida"
+    },
+    {
+      "name": "Clinique Errazi El Jadida",
+      "type": "clinic",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Clinique privée",
+      "lat": 33.24,
+      "lon": -8.51,
+      "city": "El Jadida"
+    },
+    {
+      "name": "Hôpital Sidi Mohammed Ben Abdellah Safi",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 32.2833,
+      "lon": -9.2333,
+      "city": "Safi"
+    },
+    {
+      "name": "Hôpital Mohammed V Béni Mellal",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 32.3333,
+      "lon": -6.35,
+      "city": "Béni Mellal"
+    },
+    {
+      "name": "Hôpital Saniat Rmel Tétouan",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 35.5785,
+      "lon": -5.3684,
+      "city": "Tétouan"
+    },
+    {
+      "name": "Hôpital Mohamed Bouafi Nador",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 35.1667,
+      "lon": -2.9333,
+      "city": "Nador"
+    },
+    {
+      "name": "Hôpital Laayoune",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 27.1253,
+      "lon": -13.1625,
+      "city": "Laayoune"
+    },
+    {
+      "name": "Hôpital Dakhla",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 23.7137,
+      "lon": -15.9355,
+      "city": "Dakhla"
+    },
+    {
+      "name": "Aéroport Mohammed V Casablanca",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Hub national — 10M passagers/an",
+      "lat": 33.3675,
+      "lon": -7.5897,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Aéroport Marrakech Menara",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Aéroport international",
+      "lat": 31.6069,
+      "lon": -8.0363,
+      "city": "Marrakech"
+    },
+    {
+      "name": "Aéroport Tanger Ibn Battouta",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Aéroport international",
+      "lat": 35.7269,
+      "lon": -5.9169,
+      "city": "Tanger"
+    },
+    {
+      "name": "Aéroport Agadir Al Massira",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Aéroport international",
+      "lat": 30.325,
+      "lon": -9.4131,
+      "city": "Agadir"
+    },
+    {
+      "name": "Aéroport Fès-Saïss",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Aéroport régional",
+      "lat": 33.9272,
+      "lon": -4.9778,
+      "city": "Fès"
+    },
+    {
+      "name": "Aéroport Oujda Angads",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Aéroport régional",
+      "lat": 34.7872,
+      "lon": -1.924,
+      "city": "Oujda"
+    },
+    {
+      "name": "Aéroport Rabat-Salé",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Aéroport régional",
+      "lat": 34.0514,
+      "lon": -6.7515,
+      "city": "Rabat"
+    },
+    {
+      "name": "Aéroport Nador El Aroui",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Aéroport régional",
+      "lat": 34.9888,
+      "lon": -3.0282,
+      "city": "Nador"
+    },
+    {
+      "name": "Aéroport Laayoune Hassan I",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Aéroport régional",
+      "lat": 27.1516,
+      "lon": -13.2191,
+      "city": "Laayoune"
+    },
+    {
+      "name": "Aéroport Dakhla",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "CRITIQUE",
+      "risk": "Aéroport régional",
+      "lat": 23.7183,
+      "lon": -15.932,
+      "city": "Dakhla"
+    },
+    {
+      "name": "Aéroport Ouarzazate",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "ÉLEVÉ",
+      "risk": "Aéroport régional",
+      "lat": 30.9391,
+      "lon": -6.9094,
+      "city": "Ouarzazate"
+    },
+    {
+      "name": "Aéroport Tétouan Sania Ramel",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "ÉLEVÉ",
+      "risk": "Aéroport régional",
+      "lat": 35.5943,
+      "lon": -5.32,
+      "city": "Tétouan"
+    },
+    {
+      "name": "Aéroport Al Hoceima Cherif Al Idrissi",
+      "type": "aerodrome",
+      "icon": "✈️",
+      "priority": "ÉLEVÉ",
+      "risk": "Aéroport régional",
+      "lat": 35.1769,
+      "lon": -3.8395,
+      "city": "Al Hoceima"
+    },
+    {
+      "name": "Gare de Casablanca Voyageurs",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Principale gare nationale",
+      "lat": 33.5944,
+      "lon": -7.6122,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Gare de Casablanca Port",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Gare ferroviaire",
+      "lat": 33.6014,
+      "lon": -7.6244,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Gare de Rabat Ville",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Gare principale Rabat",
+      "lat": 33.9907,
+      "lon": -6.855,
+      "city": "Rabat"
+    },
+    {
+      "name": "Gare de Rabat Agdal",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Gare secondaire Rabat",
+      "lat": 33.9728,
+      "lon": -6.8719,
+      "city": "Rabat"
+    },
+    {
+      "name": "Gare de Tanger Ville",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Gare principale Tanger",
+      "lat": 35.7679,
+      "lon": -5.7979,
+      "city": "Tanger"
+    },
+    {
+      "name": "Gare de Marrakech",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Gare principale Marrakech",
+      "lat": 31.6296,
+      "lon": -8.0104,
+      "city": "Marrakech"
+    },
+    {
+      "name": "Gare de Fès",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Gare principale Fès",
+      "lat": 34.0229,
+      "lon": -5.0142,
+      "city": "Fès"
+    },
+    {
+      "name": "Gare de Meknès",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Gare principale Meknès",
+      "lat": 33.8992,
+      "lon": -5.5536,
+      "city": "Meknès"
+    },
+    {
+      "name": "Gare de Kénitra",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Gare principale Kénitra",
+      "lat": 34.26,
+      "lon": -6.575,
+      "city": "Kénitra"
+    },
+    {
+      "name": "Gare de Oujda",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "ÉLEVÉ",
+      "risk": "Gare principale Oujda",
+      "lat": 34.68,
+      "lon": -1.91,
+      "city": "Oujda"
+    },
+    {
+      "name": "Gare de Safi",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "MODÉRÉ",
+      "risk": "Gare régionale",
+      "lat": 32.31,
+      "lon": -9.22,
+      "city": "Safi"
+    },
+    {
+      "name": "Gare de El Jadida",
+      "type": "station",
+      "icon": "🚉",
+      "priority": "MODÉRÉ",
+      "risk": "Gare régionale",
+      "lat": 33.23,
+      "lon": -8.51,
+      "city": "El Jadida"
+    },
+    {
+      "name": "OCP — Usine Jorf Lasfar",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "Engrais phosphatés — NH3, H2SO4, HNO3",
+      "lat": 33.0972,
+      "lon": -8.6272,
+      "city": "El Jadida"
+    },
+    {
+      "name": "OCP — Usine Safi",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "Engrais phosphatés — H2SO4",
+      "lat": 32.28,
+      "lon": -9.21,
+      "city": "Safi"
+    },
+    {
+      "name": "OCP — Site Khouribga",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "Extraction phosphates",
+      "lat": 32.8833,
+      "lon": -6.9167,
+      "city": "Khouribga"
+    },
+    {
+      "name": "OCP — Site Benguerir",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "Extraction phosphates",
+      "lat": 32.2333,
+      "lon": -7.95,
+      "city": "Benguerir"
+    },
+    {
+      "name": "OCP — Site Youssoufia",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "Extraction phosphates",
+      "lat": 32.25,
+      "lon": -8.5333,
+      "city": "Youssoufia"
+    },
+    {
+      "name": "Raffinerie SAMIR Mohammedia",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "Raffinerie pétrole — risque explosif",
+      "lat": 33.6939,
+      "lon": -7.4153,
+      "city": "Mohammedia"
+    },
+    {
+      "name": "SNEP — Complexe chimique Mohammedia",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "Chlore Cl2, PVC — risque majeur",
+      "lat": 33.68,
+      "lon": -7.39,
+      "city": "Mohammedia"
+    },
+    {
+      "name": "FERTIMA — Engrais azotés Mohammedia",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "NH3 liquide — risque toxique",
+      "lat": 33.67,
+      "lon": -7.4,
+      "city": "Mohammedia"
+    },
+    {
+      "name": "Terminal pétrolier Mohammedia",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "Stockage hydrocarbures",
+      "lat": 33.7,
+      "lon": -7.42,
+      "city": "Mohammedia"
+    },
+    {
+      "name": "Zone Industrielle Aïn Johra Casablanca",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "ÉLEVÉ",
+      "risk": "Industries diverses",
+      "lat": 33.52,
+      "lon": -7.73,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Zone Industrielle Sidi Bernoussi Casablanca",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "ÉLEVÉ",
+      "risk": "Industries chimiques légères",
+      "lat": 33.58,
+      "lon": -7.55,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Terminal chimique Tanger Med",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "CRITIQUE",
+      "risk": "Port industriel — matières dangereuses",
+      "lat": 35.8833,
+      "lon": -5.5,
+      "city": "Tanger"
+    },
+    {
+      "name": "Zone Industrielle Tanger Automotive City",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "ÉLEVÉ",
+      "risk": "Constructeurs auto — peintures solvants",
+      "lat": 35.73,
+      "lon": -5.95,
+      "city": "Tanger"
+    },
+    {
+      "name": "ONEE — Centrale thermique Mohammedia",
+      "type": "industrial",
+      "icon": "⚡",
+      "priority": "CRITIQUE",
+      "risk": "Centrale électrique — charbon",
+      "lat": 33.72,
+      "lon": -7.38,
+      "city": "Mohammedia"
+    },
+    {
+      "name": "ONEE — Centrale Jerada",
+      "type": "industrial",
+      "icon": "⚡",
+      "priority": "CRITIQUE",
+      "risk": "Centrale thermique charbon",
+      "lat": 34.31,
+      "lon": -2.16,
+      "city": "Jerada"
+    },
+    {
+      "name": "ONEE — Centrale Kénitra",
+      "type": "industrial",
+      "icon": "⚡",
+      "priority": "CRITIQUE",
+      "risk": "Centrale thermique",
+      "lat": 34.27,
+      "lon": -6.56,
+      "city": "Kénitra"
+    },
+    {
+      "name": "Station de traitement eau Tamesna",
+      "type": "water_works",
+      "icon": "💧",
+      "priority": "CRITIQUE",
+      "risk": "Infrastructure eau potable Rabat",
+      "lat": 33.92,
+      "lon": -6.94,
+      "city": "Rabat"
+    },
+    {
+      "name": "Station de traitement eau Ain Attig",
+      "type": "water_works",
+      "icon": "💧",
+      "priority": "CRITIQUE",
+      "risk": "Infrastructure eau potable Casablanca",
+      "lat": 33.61,
+      "lon": -7.69,
+      "city": "Casablanca"
+    },
+    {
+      "name": "SOMACA — Usine automobile Casablanca",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "ÉLEVÉ",
+      "risk": "Peintures solvants — risque chimique",
+      "lat": 33.53,
+      "lon": -7.57,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Stellantis Kénitra",
+      "type": "industrial",
+      "icon": "🏭",
+      "priority": "ÉLEVÉ",
+      "risk": "Usine automobile — peintures solvants",
+      "lat": 34.25,
+      "lon": -6.61,
+      "city": "Kénitra"
+    },
+    {
+      "name": "Port Tanger Med",
+      "type": "aerodrome",
+      "icon": "🚢",
+      "priority": "CRITIQUE",
+      "risk": "1er port d'Afrique — conteneurs et chimie",
+      "lat": 35.8833,
+      "lon": -5.5,
+      "city": "Tanger"
+    },
+    {
+      "name": "Port de Casablanca",
+      "type": "aerodrome",
+      "icon": "🚢",
+      "priority": "CRITIQUE",
+      "risk": "Port national — matières dangereuses",
+      "lat": 33.6044,
+      "lon": -7.6183,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Port de Jorf Lasfar",
+      "type": "aerodrome",
+      "icon": "🚢",
+      "priority": "CRITIQUE",
+      "risk": "Port chimique — soufre, phosphates, Cl2",
+      "lat": 33.1167,
+      "lon": -8.6333,
+      "city": "El Jadida"
+    },
+    {
+      "name": "Port de Safi",
+      "type": "aerodrome",
+      "icon": "🚢",
+      "priority": "ÉLEVÉ",
+      "risk": "Port chimique — phosphates",
+      "lat": 32.3,
+      "lon": -9.25,
+      "city": "Safi"
+    },
+    {
+      "name": "Port d'Agadir",
+      "type": "aerodrome",
+      "icon": "🚢",
+      "priority": "ÉLEVÉ",
+      "risk": "Port commercial et pêche",
+      "lat": 30.42,
+      "lon": -9.65,
+      "city": "Agadir"
+    },
+    {
+      "name": "Port de Nador",
+      "type": "aerodrome",
+      "icon": "🚢",
+      "priority": "ÉLEVÉ",
+      "risk": "Port commercial",
+      "lat": 35.17,
+      "lon": -2.94,
+      "city": "Nador"
+    },
+    {
+      "name": "Port de Mohammedia",
+      "type": "aerodrome",
+      "icon": "🚢",
+      "priority": "CRITIQUE",
+      "risk": "Port pétrolier",
+      "lat": 33.72,
+      "lon": -7.4,
+      "city": "Mohammedia"
+    },
+    {
+      "name": "Stade Mohammed V Casablanca",
+      "type": "stadium",
+      "icon": "🏟️",
+      "priority": "CRITIQUE",
+      "risk": "Stade national — 67 000 places",
+      "lat": 33.594,
+      "lon": -7.636,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Grand Stade de Marrakech",
+      "type": "stadium",
+      "icon": "🏟️",
+      "priority": "CRITIQUE",
+      "risk": "Stade international — 45 000 places",
+      "lat": 31.61,
+      "lon": -8.02,
+      "city": "Marrakech"
+    },
+    {
+      "name": "Stade Adrar Agadir",
+      "type": "stadium",
+      "icon": "🏟️",
+      "priority": "CRITIQUE",
+      "risk": "Stade moderne — 45 000 places",
+      "lat": 30.42,
+      "lon": -9.61,
+      "city": "Agadir"
+    },
+    {
+      "name": "Grand Stade de Tanger",
+      "type": "stadium",
+      "icon": "🏟️",
+      "priority": "CRITIQUE",
+      "risk": "Stade — 45 000 places",
+      "lat": 35.76,
+      "lon": -5.83,
+      "city": "Tanger"
+    },
+    {
+      "name": "Stade Moulay Abdallah Rabat",
+      "type": "stadium",
+      "icon": "🏟️",
+      "priority": "CRITIQUE",
+      "risk": "Stade national — 52 000 places",
+      "lat": 33.995,
+      "lon": -6.87,
+      "city": "Rabat"
+    },
+    {
+      "name": "Stade de Fès",
+      "type": "stadium",
+      "icon": "🏟️",
+      "priority": "ÉLEVÉ",
+      "risk": "Stade régional — 45 000 places",
+      "lat": 34.02,
+      "lon": -4.98,
+      "city": "Fès"
+    },
+    {
+      "name": "Stade Boujniba Khouribga",
+      "type": "stadium",
+      "icon": "🏟️",
+      "priority": "MODÉRÉ",
+      "risk": "Stade régional",
+      "lat": 32.87,
+      "lon": -6.92,
+      "city": "Khouribga"
+    },
+    {
+      "name": "Complexe Sportif Prince Héritier Moulay El Hassan",
+      "type": "stadium",
+      "icon": "🏟️",
+      "priority": "ÉLEVÉ",
+      "risk": "Stade polyvalent Rabat",
+      "lat": 34.0,
+      "lon": -6.86,
+      "city": "Rabat"
+    },
+    {
+      "name": "Université Mohammed V Rabat",
+      "type": "university",
+      "icon": "🎓",
+      "priority": "ÉLEVÉ",
+      "risk": "Grande université — 100 000 étudiants",
+      "lat": 33.976,
+      "lon": -6.8499,
+      "city": "Rabat"
+    },
+    {
+      "name": "Université Hassan II Casablanca",
+      "type": "university",
+      "icon": "🎓",
+      "priority": "ÉLEVÉ",
+      "risk": "Grande université",
+      "lat": 33.5731,
+      "lon": -7.5898,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Université Cadi Ayyad Marrakech",
+      "type": "university",
+      "icon": "🎓",
+      "priority": "ÉLEVÉ",
+      "risk": "Université régionale",
+      "lat": 31.6295,
+      "lon": -7.9811,
+      "city": "Marrakech"
+    },
+    {
+      "name": "Université Sidi Mohammed Ben Abdellah Fès",
+      "type": "university",
+      "icon": "🎓",
+      "priority": "ÉLEVÉ",
+      "risk": "Université régionale",
+      "lat": 34.0209,
+      "lon": -5.0078,
+      "city": "Fès"
+    },
+    {
+      "name": "Université Abdelmalek Essaadi Tanger",
+      "type": "university",
+      "icon": "🎓",
+      "priority": "ÉLEVÉ",
+      "risk": "Université régionale",
+      "lat": 35.7595,
+      "lon": -5.834,
+      "city": "Tanger"
+    },
+    {
+      "name": "EMI — École Mohammadia d'Ingénieurs Rabat",
+      "type": "university",
+      "icon": "🎓",
+      "priority": "ÉLEVÉ",
+      "risk": "Grande école d'ingénieurs",
+      "lat": 33.976,
+      "lon": -6.87,
+      "city": "Rabat"
+    },
+    {
+      "name": "Siège du Ministère de l'Intérieur",
+      "type": "government",
+      "icon": "🏛️",
+      "priority": "CRITIQUE",
+      "risk": "Ministère — gestion de crise",
+      "lat": 33.9921,
+      "lon": -6.8499,
+      "city": "Rabat"
+    },
+    {
+      "name": "Parlement Maroc Rabat",
+      "type": "government",
+      "icon": "🏛️",
+      "priority": "CRITIQUE",
+      "risk": "Institution nationale",
+      "lat": 34.02,
+      "lon": -6.83,
+      "city": "Rabat"
+    },
+    {
+      "name": "Palais Royal Rabat",
+      "type": "government",
+      "icon": "🏛️",
+      "priority": "CRITIQUE",
+      "risk": "Résidence officielle",
+      "lat": 34.002,
+      "lon": -6.858,
+      "city": "Rabat"
+    },
+    {
+      "name": "Ambassade USA Rabat",
+      "type": "embassy",
+      "icon": "🏛️",
+      "priority": "CRITIQUE",
+      "risk": "Ambassade étrangère",
+      "lat": 34.01,
+      "lon": -6.83,
+      "city": "Rabat"
+    },
+    {
+      "name": "Ambassade France Rabat",
+      "type": "embassy",
+      "icon": "🏛️",
+      "priority": "CRITIQUE",
+      "risk": "Ambassade étrangère",
+      "lat": 33.99,
+      "lon": -6.85,
+      "city": "Rabat"
+    },
+    {
+      "name": "Wilaya de Casablanca",
+      "type": "government",
+      "icon": "🏛️",
+      "priority": "ÉLEVÉ",
+      "risk": "Administration régionale",
+      "lat": 33.595,
+      "lon": -7.62,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Wilaya de Marrakech",
+      "type": "government",
+      "icon": "🏛️",
+      "priority": "ÉLEVÉ",
+      "risk": "Administration régionale",
+      "lat": 31.6295,
+      "lon": -7.9811,
+      "city": "Marrakech"
+    },
+    {
+      "name": "Wilaya de Tanger",
+      "type": "government",
+      "icon": "🏛️",
+      "priority": "ÉLEVÉ",
+      "risk": "Administration régionale",
+      "lat": 35.7595,
+      "lon": -5.834,
+      "city": "Tanger"
+    },
+    {
+      "name": "Wilaya d'Agadir",
+      "type": "government",
+      "icon": "🏛️",
+      "priority": "ÉLEVÉ",
+      "risk": "Administration régionale",
+      "lat": 30.4278,
+      "lon": -9.5981,
+      "city": "Agadir"
+    },
+    {
+      "name": "Wilaya de Fès",
+      "type": "government",
+      "icon": "🏛️",
+      "priority": "ÉLEVÉ",
+      "risk": "Administration régionale",
+      "lat": 34.0209,
+      "lon": -5.0078,
+      "city": "Fès"
+    },
+    {
+      "name": "Caserne Centrale Sapeurs-Pompiers Casablanca",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "Unité principale SDIS",
+      "lat": 33.58,
+      "lon": -7.61,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Caserne Pompiers Rabat",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "SDIS Rabat",
+      "lat": 33.98,
+      "lon": -6.85,
+      "city": "Rabat"
+    },
+    {
+      "name": "Caserne Pompiers Tanger",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "SDIS Tanger",
+      "lat": 35.76,
+      "lon": -5.82,
+      "city": "Tanger"
+    },
+    {
+      "name": "Caserne Pompiers Marrakech",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "SDIS Marrakech",
+      "lat": 31.62,
+      "lon": -7.97,
+      "city": "Marrakech"
+    },
+    {
+      "name": "Caserne Pompiers Agadir",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "SDIS Agadir",
+      "lat": 30.42,
+      "lon": -9.59,
+      "city": "Agadir"
+    },
+    {
+      "name": "Caserne Pompiers Fès",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "SDIS Fès",
+      "lat": 34.02,
+      "lon": -5.0,
+      "city": "Fès"
+    },
+    {
+      "name": "Caserne Pompiers Meknès",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "SDIS Meknès",
+      "lat": 33.89,
+      "lon": -5.55,
+      "city": "Meknès"
+    },
+    {
+      "name": "Caserne Pompiers Kénitra",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "SDIS Kénitra",
+      "lat": 34.26,
+      "lon": -6.57,
+      "city": "Kénitra"
+    },
+    {
+      "name": "Caserne Pompiers El Jadida",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "SDIS El Jadida",
+      "lat": 33.23,
+      "lon": -8.5,
+      "city": "El Jadida"
+    },
+    {
+      "name": "Caserne Pompiers Oujda",
+      "type": "fire_station",
+      "icon": "🚒",
+      "priority": "ÉLEVÉ",
+      "risk": "SDIS Oujda",
+      "lat": 34.68,
+      "lon": -1.91,
+      "city": "Oujda"
+    },
+    {
+      "name": "Morocco Mall Casablanca",
+      "type": "mall",
+      "icon": "🛍️",
+      "priority": "ÉLEVÉ",
+      "risk": "Centre commercial — 6M visiteurs/an",
+      "lat": 33.55,
+      "lon": -7.67,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Anfa Place Casablanca",
+      "type": "mall",
+      "icon": "🛍️",
+      "priority": "ÉLEVÉ",
+      "risk": "Centre commercial moderne",
+      "lat": 33.58,
+      "lon": -7.64,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Carré Eden Marrakech",
+      "type": "mall",
+      "icon": "🛍️",
+      "priority": "ÉLEVÉ",
+      "risk": "Centre commercial",
+      "lat": 31.63,
+      "lon": -7.98,
+      "city": "Marrakech"
+    },
+    {
+      "name": "Marjane Hay Riad Rabat",
+      "type": "supermarket",
+      "icon": "🛒",
+      "priority": "ÉLEVÉ",
+      "risk": "Hypermarché",
+      "lat": 33.96,
+      "lon": -6.84,
+      "city": "Rabat"
+    },
+    {
+      "name": "Marjane Casablanca Aïn Sebaa",
+      "type": "supermarket",
+      "icon": "🛒",
+      "priority": "ÉLEVÉ",
+      "risk": "Hypermarché",
+      "lat": 33.61,
+      "lon": -7.53,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Marjane Tanger",
+      "type": "supermarket",
+      "icon": "🛒",
+      "priority": "ÉLEVÉ",
+      "risk": "Hypermarché",
+      "lat": 35.75,
+      "lon": -5.82,
+      "city": "Tanger"
+    },
+    {
+      "name": "Carrefour Marrakech",
+      "type": "supermarket",
+      "icon": "🛒",
+      "priority": "ÉLEVÉ",
+      "risk": "Hypermarché",
+      "lat": 31.62,
+      "lon": -7.99,
+      "city": "Marrakech"
+    },
+    {
+      "name": "Souk Central Casablanca",
+      "type": "marketplace",
+      "icon": "🏪",
+      "priority": "MODÉRÉ",
+      "risk": "Grand marché traditionnel",
+      "lat": 33.59,
+      "lon": -7.61,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Centre Hospitalier Provincial de Kénitra",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital provincial — services urgences et chirurgie",
+      "lat": 34.259,
+      "lon": -6.5781,
+      "city": "Kénitra"
+    },
+    {
+      "name": "Clinique Anoual Kénitra",
+      "type": "clinic",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Clinique privée — patients exposés",
+      "lat": 34.262,
+      "lon": -6.571,
+      "city": "Kénitra"
+    },
+    {
+      "name": "Clinique Orthopédique CCOTK Kénitra",
+      "type": "clinic",
+      "icon": "🏥",
+      "priority": "ÉLEVÉ",
+      "risk": "Clinique spécialisée — patients non mobiles",
+      "lat": 34.26,
+      "lon": -6.575,
+      "city": "Kénitra"
+    },
+    {
+      "name": "Centre de Santé Urbain El Menzeh Kénitra",
+      "type": "clinic",
+      "icon": "🏥",
+      "priority": "ÉLEVÉ",
+      "risk": "Centre de santé urbain",
+      "lat": 34.265,
+      "lon": -6.572,
+      "city": "Kénitra"
+    },
+    {
+      "name": "Hôpital Cheikh Khalifa Ben Zayed Casablanca",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "CHU moderne — soins intensifs",
+      "lat": 33.52,
+      "lon": -7.67,
+      "city": "Casablanca"
+    },
+    {
+      "name": "Hôpital Ar-Razi Salé",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital psychiatrique — patients non mobiles",
+      "lat": 34.04,
+      "lon": -6.79,
+      "city": "Salé"
+    },
+    {
+      "name": "Hôpital Al Ghassani Fès",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional oncologie",
+      "lat": 34.015,
+      "lon": -4.99,
+      "city": "Fès"
+    },
+    {
+      "name": "Hôpital Mohammed V Tanger",
+      "type": "hospital",
+      "icon": "🏥",
+      "priority": "CRITIQUE",
+      "risk": "Hôpital régional",
+      "lat": 35.77,
+      "lon": -5.81,
+      "city": "Tanger"
+    }
+  ]
+}
