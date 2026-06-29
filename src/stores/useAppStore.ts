@@ -4,6 +4,15 @@ export type Theme = "dark" | "light";
 export type Period = "24h" | "7d" | "30d" | "3m" | "custom";
 export type AlertSeverity = "critical" | "high" | "medium" | "low";
 
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  severity: AlertSeverity;
+  timestamp: Date;
+  read: boolean;
+}
+
 interface AppState {
   theme: Theme;
   toggleTheme: () => void;
@@ -18,15 +27,6 @@ interface AppState {
   notifications: Notification[];
   addNotification: (n: Notification) => void;
   dismissNotification: (id: string) => void;
-}
-
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  severity: AlertSeverity;
-  timestamp: Date;
-  read: boolean;
 }
 
 export const useAppStore = create<AppState>((set) => ({
