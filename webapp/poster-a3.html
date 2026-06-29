@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>HAZMOD — Poster A3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+@page { size: A3 landscape; margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 420mm; height: 297mm;
+  font-family: 'Inter', sans-serif;
+  background: #0A1628;
+  color: #E2E8F0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Background grid */
+body::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  z-index: 0;
+}
+
+.poster { position: relative; z-index: 1; width: 100%; height: 100%; padding: 12mm; display: flex; flex-direction: column; gap: 8px; }
+
+/* ── HEADER ── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #0C2340 0%, #1E3A5F 100%);
+  border: 1px solid rgba(59,130,246,0.3);
+  border-radius: 12px; padding: 14px 24px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.logo-icon { font-size: 36px; filter: drop-shadow(0 0 12px rgba(239,68,68,0.5)); }
+.logo-text { font-size: 32px; font-weight: 900; letter-spacing: 3px; }
+.logo-text span { color: #3B82F6; }
+.logo-sub { font-size: 11px; color: #93C5FD; letter-spacing: 1px; margin-top: 2px; }
+.header-center { text-align: center; }
+.header-center h1 { font-size: 16px; font-weight: 700; color: #C9A227; letter-spacing: 1px; }
+.header-center p { font-size: 9px; color: #94A3B8; margin-top: 2px; }
+.header-right { text-align: right; }
+.header-right .inst { font-size: 8.5px; color: #93C5FD; line-height: 1.5; }
+.header-badges { display: flex; gap: 6px; margin-top: 6px; }
+.hbadge { font-size: 7px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.hbadge.r { background: rgba(239,68,68,0.2); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.3); }
+.hbadge.b { background: rgba(59,130,246,0.2); color: #93C5FD; border: 1px solid rgba(59,130,246,0.3); }
+.hbadge.g { background: rgba(16,185,129,0.2); color: #6EE7B7; border: 1px solid rgba(16,185,129,0.3); }
+.hbadge.y { background: rgba(245,158,11,0.2); color: #FCD34D; border: 1px solid rgba(245,158,11,0.3); }
+
+/* ── MAIN GRID ── */
+.main { flex: 1; display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 8px; min-height: 0; }
+
+/* ── CARDS ── */
+.card {
+  background: linear-gradient(145deg, rgba(15,23,42,0.95), rgba(30,41,59,0.9));
+  border: 1px solid rgba(59,130,246,0.15);
+  border-radius: 10px; padding: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  display: flex; flex-direction: column;
+}
+.card-title {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+  color: #C9A227; margin-bottom: 8px; padding-bottom: 5px;
+  border-bottom: 1px solid rgba(201,162,39,0.2);
+  display: flex; align-items: center; gap: 6px;
+}
+.card-title .icon { font-size: 14px; }
+
+/* ── LEFT COLUMN ── */
+.left { display: flex; flex-direction: column; gap: 8px; }
+
+/* Architecture */
+.arch-flow { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.arch-step {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(59,130,246,0.08); border-radius: 6px; padding: 5px 8px;
+  border-left: 3px solid #3B82F6;
+}
+.arch-step.red { border-left-color: #EF4444; background: rgba(239,68,68,0.08); }
+.arch-step.green { border-left-color: #10B981; background: rgba(16,185,129,0.08); }
+.arch-step.gold { border-left-color: #C9A227; background: rgba(201,162,39,0.08); }
+.arch-step .s-icon { font-size: 16px; }
+.arch-step .s-text { font-size: 7.5px; line-height: 1.3; }
+.arch-step .s-text strong { color: #E2E8F0; font-size: 8px; }
+.arch-arrow { text-align: center; color: #3B82F6; font-size: 10px; }
+
+/* Physics */
+.formula-box {
+  background: rgba(0,0,0,0.4); border-radius: 6px; padding: 8px;
+  font-family: 'JetBrains Mono', monospace; font-size: 8px;
+  border: 1px solid rgba(59,130,246,0.15); margin-top: 4px;
+  color: #93C5FD; line-height: 1.6;
+}
+.formula-box .eq { color: #FCD34D; font-weight: 600; }
+
+/* KPIs */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 4px; }
+.kpi-item {
+  background: rgba(0,0,0,0.3); border-radius: 6px; padding: 6px 8px; text-align: center;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.kpi-item .kv { font-size: 16px; font-weight: 800; }
+.kpi-item .kv.red { color: #EF4444; }
+.kpi-item .kv.blue { color: #3B82F6; }
+.kpi-item .kv.green { color: #10B981; }
+.kpi-item .kv.gold { color: #C9A227; }
+.kpi-item .kl { font-size: 6.5px; color: #94A3B8; margin-top: 2px; }
+
+/* ── CENTER COLUMN ── */
+.center { display: flex; flex-direction: column; gap: 8px; }
+
+/* Simulated Map */
+.map-sim {
+  flex: 1; border-radius: 8px; position: relative; overflow: hidden;
+  background: #1a2332;
+  border: 1px solid rgba(59,130,246,0.2);
+  min-height: 100px;
+}
+.map-sim canvas { width: 100%; height: 100%; }
+.map-legend-overlay {
+  position: absolute; bottom: 8px; left: 8px;
+  background: rgba(10,22,40,0.92); border-radius: 6px; padding: 8px 10px;
+  border: 1px solid rgba(59,130,246,0.2); font-size: 7px;
+}
+.leg-row { display: flex; align-items: center; gap: 5px; margin: 2px 0; }
+.leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+.map-coord-overlay {
+  position: absolute; top: 8px; left: 8px;
+  background: rgba(10,22,40,0.9); border-radius: 6px; padding: 5px 10px;
+  font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #93C5FD;
+  border: 1px solid rgba(59,130,246,0.2);
+}
+.map-badge-overlay {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4);
+  border-radius: 6px; padding: 5px 10px; font-size: 7.5px; font-weight: 700; color: #FCA5A5;
+}
+
+/* Charts row */
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.chart-box {
+  background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px;
+  border: 1px solid rgba(59,130,246,0.1);
+}
+.chart-box .ct { font-size: 7.5px; font-weight: 600; color: #C9A227; margin-bottom: 6px; }
+.chart-box canvas { width: 100%; height: 90px; }
+
+/* ── RIGHT COLUMN ── */
+.right { display: flex; flex-direction: column; gap: 8px; }
+
+/* Hotspots */
+.hs-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.hs-table th {
+  font-size: 6.5px; text-align: left; padding: 3px 4px;
+  background: rgba(12,35,64,0.8); color: #C9A227; font-weight: 600;
+  border-bottom: 1px solid rgba(201,162,39,0.3);
+}
+.hs-table td { font-size: 6.5px; padding: 2.5px 4px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.hs-table tr:nth-child(odd) td { background: rgba(255,255,255,0.02); }
+.zone-tag { padding: 1px 5px; border-radius: 3px; font-size: 6px; font-weight: 600; }
+.zone-tag.e3 { background: rgba(239,68,68,0.2); color: #FCA5A5; }
+.zone-tag.e2 { background: rgba(245,158,11,0.2); color: #FCD34D; }
+.zone-tag.e1 { background: rgba(16,185,129,0.2); color: #6EE7B7; }
+.src-tag { padding: 1px 4px; border-radius: 3px; font-size: 5.5px; font-weight: 600; }
+.src-tag.osm { background: #3B82F6; color: #fff; }
+.src-tag.base { background: #6B7280; color: #fff; }
+
+/* Decision */
+.decision-box {
+  border-radius: 8px; padding: 10px;
+  text-align: center;
+}
+.decision-box.red { background: linear-gradient(135deg, rgba(127,29,29,0.5), rgba(185,28,28,0.3)); border: 1px solid rgba(239,68,68,0.4); }
+.decision-box .dl { font-size: 11px; font-weight: 800; color: #EF4444; letter-spacing: 1px; }
+.decision-box .dd { font-size: 7px; color: #FCA5A5; margin-top: 3px; }
+
+/* Timeline */
+.timeline-mini { display: flex; gap: 3px; margin-top: 4px; }
+.tl-phase {
+  flex: 1; border-radius: 4px; padding: 5px; text-align: center;
+  font-size: 6px; font-weight: 600;
+}
+.tl-phase.p1 { background: rgba(59,130,246,0.2); color: #93C5FD; border: 1px solid rgba(59,130,246,0.3); }
+.tl-phase.p2 { background: rgba(245,158,11,0.2); color: #FCD34D; border: 1px solid rgba(245,158,11,0.3); }
+.tl-phase.p3 { background: rgba(239,68,68,0.2); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.3); }
+.tl-phase.p4 { background: rgba(16,185,129,0.2); color: #6EE7B7; border: 1px solid rgba(16,185,129,0.3); }
+.tl-phase .tp-t { font-size: 5.5px; margin-top: 2px; font-weight: 400; }
+
+/* Gravity */
+.grav-bar-wrap { margin-top: 4px; }
+.grav-bar { height: 14px; border-radius: 7px; background: rgba(0,0,0,0.4); overflow: hidden; position: relative; }
+.grav-fill { height: 100%; border-radius: 7px; transition: width 0.5s; }
+.grav-labels { display: flex; justify-content: space-between; font-size: 6px; color: #94A3B8; margin-top: 2px; }
+.grav-val { text-align: center; font-size: 20px; font-weight: 900; margin: 4px 0; }
+
+/* PDF section */
+.pdf-preview {
+  display: flex; gap: 4px; margin-top: 4px; align-items: flex-start;
+}
+.pdf-page {
+  flex: 1; background: #fff; border-radius: 3px; padding: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3); position: relative;
+  min-height: 55px;
+}
+.pdf-page .pp-title { font-size: 5px; font-weight: 700; color: #0C2340; text-align: center; margin-bottom: 2px; }
+.pdf-page .pp-bar { height: 2px; margin: 1px 0; border-radius: 1px; }
+.pdf-page .pp-line { height: 1.5px; background: #E2E8F0; margin: 2px 0; border-radius: 1px; }
+
+/* ── FOOTER ── */
+.footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 16px;
+  background: linear-gradient(90deg, rgba(201,162,39,0.1), transparent, rgba(201,162,39,0.1));
+  border-top: 1px solid rgba(201,162,39,0.2);
+  border-radius: 0 0 10px 10px;
+}
+.footer-left, .footer-right { font-size: 7px; color: #94A3B8; }
+.footer-center { font-size: 7.5px; color: #C9A227; font-weight: 600; }
+
+/* Tech stack */
+.tech-row { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.tech-tag {
+  font-size: 6px; padding: 2px 6px; border-radius: 4px;
+  background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2);
+  color: #93C5FD; font-weight: 500;
+}
+
+/* Features list */
+.feat-list { margin-top: 4px; }
+.feat-item { display: flex; align-items: flex-start; gap: 5px; margin: 3px 0; }
+.feat-item .fi { font-size: 11px; }
+.feat-item .ft { font-size: 7px; line-height: 1.3; }
+.feat-item .ft strong { color: #E2E8F0; }
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <!-- ══ HEADER ══ -->
+  <div class="header">
+    <div class="header-left">
+      <span class="logo-icon">☣️</span>
+      <div>
+        <div class="logo-text">HAZ<span>MOD</span></div>
+        <div class="logo-sub">Hazardous Materials Modeling System</div>
+      </div>
+    </div>
+    <div class="header-center">
+      <h1>SYSTEME D'AIDE A LA DECISION — DISPERSION ATMOSPHERIQUE Cl₂</h1>
+      <p>Modelisation Pasquill-Gifford · Analyse Monte Carlo · Detection Hotspots OSM · Rapport PDF Ministeriel</p>
+      <div style="display:flex;gap:6px;justify-content:center;margin-top:6px;">
+        <span class="hbadge r">Chlore Cl₂</span>
+        <span class="hbadge b">Monte Carlo N=10K</span>
+        <span class="hbadge g">Pasquill-Gifford</span>
+        <span class="hbadge y">ERPG-1/2/3</span>
+        <span class="hbadge b">OpenStreetMap API</span>
+        <span class="hbadge r">Gaz Lourd ALOHA</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="inst">
+        ROYAUME DU MAROC<br/>
+        Ministere de l'Interieur<br/>
+        Commission Nationale NRBC<br/>
+        <strong style="color:#C9A227;">MS NRBCE · UHA / SERFA 2025-2026</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <div class="main">
+
+    <!-- ── LEFT COLUMN ── -->
+    <div class="left">
+
+      <!-- Architecture -->
+      <div class="card" style="flex:1.2;">
+        <div class="card-title"><span class="icon">🏗️</span> Architecture du Systeme</div>
+        <div class="arch-flow">
+          <div class="arch-step">
+            <span class="s-icon">📝</span>
+            <div class="s-text"><strong>Parametres du Scenario</strong><br/>Quantite Cl₂, vent, stabilite, localisation GPS, EPI, delai evacuation</div>
+          </div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-step red">
+            <span class="s-icon">⚛️</span>
+            <div class="s-text"><strong>Moteur Physique</strong><br/>Pasquill-Gifford (Briggs 1973) + Gaz lourd ALOHA · Zones ERPG-1/2/3</div>
+          </div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-step">
+            <span class="s-icon">🎲</span>
+            <div class="s-text"><strong>Monte Carlo (N≤10K)</strong><br/>Perturbation Q±30%, u±20% · P50, P95, P(C>seuil) par distance</div>
+          </div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-step green">
+            <span class="s-icon">🗺️</span>
+            <div class="s-text"><strong>Cartographie Leaflet</strong><br/>Panache gaussien oriente · Zones ERPG colorees · ESRI Satellite</div>
+          </div>
+          <div class="arch-arrow">▼</div>
+          <div class="arch-step gold">
+            <span class="s-icon">📊</span>
+            <div class="s-text"><strong>Tableau de Decision</strong><br/>Indice G/10, KPIs, blesses/deces, hotspots, rapport PDF ministeriel</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Physics -->
+      <div class="card">
+        <div class="card-title"><span class="icon">⚛️</span> Modele Physique</div>
+        <div class="formula-box">
+          <div><span class="eq">Panache Gaussien :</span></div>
+          <div>C(x,y) = Q/(π·u·σy·σz) · exp(-y²/2σy²)</div>
+          <div style="margin-top:4px;"><span class="eq">Gaz Lourd (ALOHA) :</span></div>
+          <div>R = (K · Q<sup>0.80</sup> · F<sub>stab</sub> / (u·S))<sup>1/1.888</sup></div>
+          <div style="margin-top:4px;"><span class="eq">Dispersion PG (Briggs 1973) :</span></div>
+          <div>σy = ay·x<sup>by</sup>·(1+0.0001x)<sup>-0.5</sup></div>
+          <div>σz = az·x<sup>bz</sup>·(1+0.0001x)<sup>-0.5</sup></div>
+          <div style="margin-top:4px;color:#FCA5A5;"><span class="eq">Seuils ERPG Cl₂ :</span></div>
+          <div>ERPG-1: 1 ppm · ERPG-2: 3 ppm · ERPG-3: 20 ppm</div>
+        </div>
+      </div>
+
+      <!-- Tech Stack -->
+      <div class="card">
+        <div class="card-title"><span class="icon">🛠️</span> Stack Technologique</div>
+        <div class="tech-row">
+          <span class="tech-tag">Three.js r128</span>
+          <span class="tech-tag">GSAP 3.12</span>
+          <span class="tech-tag">Leaflet.js 1.9</span>
+          <span class="tech-tag">Canvas 2D</span>
+          <span class="tech-tag">jsPDF</span>
+          <span class="tech-tag">Overpass API</span>
+          <span class="tech-tag">ESRI Tiles</span>
+          <span class="tech-tag">GitHub Pages</span>
+          <span class="tech-tag">Glassmorphism CSS</span>
+          <span class="tech-tag">ScrollTrigger</span>
+          <span class="tech-tag">HCP RGPH 2024</span>
+          <span class="tech-tag">WebGL Particles</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── CENTER COLUMN ── -->
+    <div class="center">
+
+      <!-- Map visualization -->
+      <div class="card" style="flex:1.5;">
+        <div class="card-title"><span class="icon">🗺️</span> Cartographie des Zones d'Impact — Panache Gaussien Oriente</div>
+        <div class="map-sim">
+          <canvas id="mapCanvas"></canvas>
+          <div class="map-coord-overlay">📍 33.9716°N, 6.8498°W · Rabat</div>
+          <div class="map-badge-overlay">⚠ ERPG ZONES ACTIVES</div>
+          <div class="map-legend-overlay">
+            <div class="leg-row"><span class="leg-dot" style="background:#EF4444;box-shadow:0 0 6px #EF4444;"></span> ERPG-3 · Danger vital · >20 ppm</div>
+            <div class="leg-row"><span class="leg-dot" style="background:#F59E0B;"></span> ERPG-2 · Irreversible · >3 ppm</div>
+            <div class="leg-row"><span class="leg-dot" style="background:#10B981;"></span> ERPG-1 · Irritation · >1 ppm</div>
+            <div class="leg-row"><span class="leg-dot" style="background:#92400E;border:1px dashed #F59E0B;"></span> Perimetre evacuation</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-row">
+        <div class="chart-box">
+          <div class="ct">📈 Profil de Concentration Axial</div>
+          <canvas id="concChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="ct">🎲 Monte Carlo — P(depassement) vs Distance</div>
+          <canvas id="mcChart"></canvas>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> Indicateurs Cles de Performance (KPIs) — Scenario Type : 9 000 kg Cl₂</div>
+        <div class="kpi-grid">
+          <div class="kpi-item"><div class="kv red">7.2/10</div><div class="kl">INDICE DE GRAVITE</div></div>
+          <div class="kpi-item"><div class="kv gold">12,450</div><div class="kl">POPULATION EXPOSEE</div></div>
+          <div class="kpi-item"><div class="kv blue">1,847</div><div class="kl">BLESSES ESTIMES</div></div>
+          <div class="kpi-item"><div class="kv green">1.0 min</div><div class="kl">ARRIVEE DU NUAGE</div></div>
+          <div class="kpi-item"><div class="kv red">87.3%</div><div class="kl">MC P(C>ERPG-2)</div></div>
+          <div class="kpi-item"><div class="kv red">23</div><div class="kl">DECES ESTIMES</div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── RIGHT COLUMN ── -->
+    <div class="right">
+
+      <!-- Decision -->
+      <div class="card">
+        <div class="card-title"><span class="icon">🚨</span> Banniere de Decision Operationnelle</div>
+        <div class="decision-box red">
+          <div class="dl">⚠ CONFINEMENT OBLIGATOIRE</div>
+          <div class="dd">Population a 300m en zone ROUGE ERPG-3 (742m).<br/>Evacuation = exposition directe a >20 ppm Cl₂.</div>
+        </div>
+        <div class="grav-bar-wrap" style="margin-top:8px;">
+          <div style="font-size:7px;color:#94A3B8;margin-bottom:2px;">Indice de Gravite Composite</div>
+          <div class="grav-bar">
+            <div class="grav-fill" style="width:72%;background:linear-gradient(90deg,#10B981,#F59E0B 40%,#EF4444 70%);"></div>
+          </div>
+          <div class="grav-labels"><span>0 Faible</span><span>4 Modere</span><span>7 Eleve</span><span>10 Critique</span></div>
+        </div>
+      </div>
+
+      <!-- Hotspots -->
+      <div class="card" style="flex:1;">
+        <div class="card-title"><span class="icon">📍</span> Hotspots — MAROC_BASE (122) + OpenStreetMap API</div>
+        <table class="hs-table">
+          <thead><tr><th>Site</th><th>Zone</th><th>Dist.</th><th>Priorite</th><th>Src</th></tr></thead>
+          <tbody>
+            <tr><td>🏥 Hopital Ibn Sina</td><td><span class="zone-tag e3">ERPG-3</span></td><td>320m</td><td style="color:#EF4444;font-weight:600;">CRITIQUE</td><td><span class="src-tag base">BASE</span></td></tr>
+            <tr><td>🏫 Ecole Al Irfane</td><td><span class="zone-tag e3">ERPG-3</span></td><td>485m</td><td style="color:#EF4444;font-weight:600;">CRITIQUE</td><td><span class="src-tag osm">OSM</span></td></tr>
+            <tr><td>🕌 Mosquee As-Sunna</td><td><span class="zone-tag e2">ERPG-2</span></td><td>890m</td><td style="color:#F59E0B;font-weight:600;">ELEVE</td><td><span class="src-tag osm">OSM</span></td></tr>
+            <tr><td>🎓 Univ. Mohammed V</td><td><span class="zone-tag e2">ERPG-2</span></td><td>1.2km</td><td style="color:#F59E0B;font-weight:600;">ELEVE</td><td><span class="src-tag base">BASE</span></td></tr>
+            <tr><td>⛽ Station Total</td><td><span class="zone-tag e2">ERPG-2</span></td><td>1.4km</td><td style="color:#EF4444;font-weight:600;">CRITIQUE</td><td><span class="src-tag osm">OSM</span></td></tr>
+            <tr><td>🚒 Caserne Pompiers</td><td><span class="zone-tag e1">ERPG-1</span></td><td>2.1km</td><td style="color:#F59E0B;font-weight:600;">ELEVE</td><td><span class="src-tag base">BASE</span></td></tr>
+            <tr><td>💊 Pharmacie Agdal</td><td><span class="zone-tag e1">ERPG-1</span></td><td>2.5km</td><td style="color:#94A3B8;">MODERE</td><td><span class="src-tag osm">OSM</span></td></tr>
+            <tr><td>🏟️ Stade M. Abdallah</td><td><span class="zone-tag e1">ERPG-1</span></td><td>3.1km</td><td style="color:#EF4444;font-weight:600;">CRITIQUE</td><td><span class="src-tag base">BASE</span></td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:6px;color:#64748B;margin-top:4px;text-align:center;">16 types d'amenites OSM : hopitaux, ecoles, mosquees, stations-service, pharmacies, gares, prisons...</div>
+      </div>
+
+      <!-- ORSEC Timeline -->
+      <div class="card">
+        <div class="card-title"><span class="icon">🚒</span> Plan ORSEC — Chronologie des Secours</div>
+        <div class="timeline-mini">
+          <div class="tl-phase p1"><strong>Phase 1</strong><div class="tp-t">T0→T+25min<br/>Alerte CTA<br/>Zonage reflexe</div></div>
+          <div class="tl-phase p2"><strong>Phase 2</strong><div class="tp-t">T+25→T+60<br/>CMIC<br/>Confinement</div></div>
+          <div class="tl-phase p3"><strong>Phase 3</strong><div class="tp-t">T+60→T+130<br/>Crise majeure<br/>Plan Blanc</div></div>
+          <div class="tl-phase p4"><strong>Phase 4</strong><div class="tp-t">T+130→T+150<br/>Stabilisation<br/>RETEX</div></div>
+        </div>
+      </div>
+
+      <!-- PDF Report -->
+      <div class="card">
+        <div class="card-title"><span class="icon">📄</span> Rapport PDF Ministeriel (7 pages)</div>
+        <div class="pdf-preview">
+          <div class="pdf-page">
+            <div class="pp-title">COUVERTURE</div>
+            <div class="pp-bar" style="background:#0C2340;height:3px;"></div>
+            <div class="pp-bar" style="background:#C9A227;height:1.5px;"></div>
+            <div style="font-size:4px;text-align:center;color:#0C2340;margin-top:2px;font-weight:700;">HAZMOD</div>
+            <div class="pp-line"></div><div class="pp-line" style="width:60%;margin:auto;"></div>
+          </div>
+          <div class="pdf-page">
+            <div class="pp-title">PARAMETRES</div>
+            <div class="pp-line"></div><div class="pp-line"></div><div class="pp-line"></div><div class="pp-line"></div>
+          </div>
+          <div class="pdf-page">
+            <div class="pp-title">RESULTATS</div>
+            <div class="pp-bar" style="background:#FEE2E2;height:2px;"></div>
+            <div class="pp-bar" style="background:#FEF3C7;height:2px;"></div>
+            <div class="pp-bar" style="background:#D1FAE5;height:2px;"></div>
+            <div class="pp-line"></div>
+          </div>
+          <div class="pdf-page">
+            <div class="pp-title">DECISION</div>
+            <div class="pp-bar" style="background:#EF4444;height:2px;"></div>
+            <div class="pp-line"></div><div class="pp-line"></div><div class="pp-line"></div>
+          </div>
+          <div class="pdf-page">
+            <div class="pp-title">MONTE CARLO</div>
+            <div class="pp-line"></div><div class="pp-line"></div>
+            <div class="pp-bar" style="background:#3B82F6;height:2px;"></div>
+          </div>
+          <div class="pdf-page">
+            <div class="pp-title">HOTSPOTS</div>
+            <div class="pp-line"></div><div class="pp-line"></div><div class="pp-line"></div>
+          </div>
+          <div class="pdf-page">
+            <div class="pp-title">ORSEC</div>
+            <div class="pp-bar" style="background:#3B82F6;height:1.5px;"></div>
+            <div class="pp-bar" style="background:#F59E0B;height:1.5px;"></div>
+            <div class="pp-bar" style="background:#EF4444;height:1.5px;"></div>
+            <div class="pp-bar" style="background:#10B981;height:1.5px;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ══ -->
+  <div class="footer">
+    <div class="footer-left">☣ HAZMOD v3.0 — Commission Nationale NRBC — Ministere de l'Interieur, Maroc</div>
+    <div class="footer-center">Modelisation Pasquill-Gifford · Gaz Lourd ALOHA · Monte Carlo · OpenStreetMap · Three.js · GSAP · Leaflet</div>
+    <div class="footer-right">MS NRBCE · UHA / SERFA · 2025–2026 · github.com/ammari12/hazmod-nrbc</div>
+  </div>
+
+</div>
+
+<script>
+// ── Draw Map Visualization ──
+function drawMap() {
+  const canvas = document.getElementById('mapCanvas');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * 2;
+  canvas.height = rect.height * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const W = rect.width, H = rect.height;
+
+  // Dark background with grid
+  ctx.fillStyle = '#0f1923';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(59,130,246,0.06)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  // Simulated terrain patches
+  const terrainColors = ['#0d1b2a', '#1b2838', '#162230', '#0f1d2d'];
+  for (let i = 0; i < 20; i++) {
+    ctx.fillStyle = terrainColors[i % 4];
+    ctx.fillRect(Math.random() * W, Math.random() * H, 40 + Math.random() * 80, 30 + Math.random() * 60);
+  }
+
+  const cx = W * 0.38, cy = H * 0.45;
+  const windAngle = (280 + 180) * Math.PI / 180; // propagation direction
+
+  // ERPG-1 (green)
+  drawCone(ctx, cx, cy, 180, windAngle, 'rgba(16,185,129,0.12)', 'rgba(16,185,129,0.4)');
+  // ERPG-2 (orange)
+  drawCone(ctx, cx, cy, 120, windAngle, 'rgba(245,158,11,0.18)', 'rgba(245,158,11,0.5)');
+  // ERPG-3 (red)
+  drawCone(ctx, cx, cy, 65, windAngle, 'rgba(239,68,68,0.22)', 'rgba(239,68,68,0.6)');
+
+  // Evacuation perimeter (dashed)
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = 'rgba(245,158,11,0.4)';
+  ctx.lineWidth = 1.5;
+  drawConeOutline(ctx, cx, cy, 140, windAngle);
+  ctx.setLineDash([]);
+
+  // Wind arrow
+  ctx.strokeStyle = '#3B82F6';
+  ctx.lineWidth = 2;
+  const arrLen = 50;
+  const ax = cx + Math.sin(windAngle) * arrLen;
+  const ay = cy - Math.cos(windAngle) * arrLen;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ax, ay); ctx.stroke();
+  // Arrowhead
+  const aSize = 8;
+  ctx.fillStyle = '#3B82F6';
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(ax - aSize * Math.sin(windAngle - 0.4), ay + aSize * Math.cos(windAngle - 0.4));
+  ctx.lineTo(ax - aSize * Math.sin(windAngle + 0.4), ay + aSize * Math.cos(windAngle + 0.4));
+  ctx.fill();
+
+  // Source marker
+  ctx.beginPath();
+  ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(239,68,68,0.3)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#EF4444';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Hotspot markers
+  const hotspots = [
+    { x: cx + 40, y: cy - 20, icon: '🏥', color: '#EF4444' },
+    { x: cx + 70, y: cy + 15, icon: '🏫', color: '#EF4444' },
+    { x: cx + 110, y: cy - 30, icon: '🕌', color: '#F59E0B' },
+    { x: cx + 140, y: cy + 40, icon: '🎓', color: '#F59E0B' },
+    { x: cx + 170, y: cy - 10, icon: '⛽', color: '#F59E0B' },
+    { x: cx - 30, y: cy + 80, icon: '🚒', color: '#10B981' },
+  ];
+  hotspots.forEach(h => {
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = h.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(h.icon, h.x, h.y);
+  });
+
+  // Zone labels
+  ctx.font = 'bold 9px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FCA5A5';
+  ctx.fillText('ERPG-3', cx + 35, cy + 40);
+  ctx.fillStyle = '#FCD34D';
+  ctx.fillText('ERPG-2', cx + 80, cy + 60);
+  ctx.fillStyle = '#6EE7B7';
+  ctx.fillText('ERPG-1', cx + 140, cy + 75);
+}
+
+function drawCone(ctx, cx, cy, radius, angle, fill, stroke) {
+  ctx.beginPath();
+  const halfAngle = 36 * Math.PI / 180;
+  const steps = 40;
+  for (let i = 0; i <= steps; i++) {
+    const t = -1 + 2 * i / steps;
+    const bearing = angle + t * halfAngle;
+    const r = radius * Math.exp(-0.5 * (t * 1.8) ** 2);
+    const x = cx + Math.sin(bearing) * Math.max(r, radius * 0.04);
+    const y = cy - Math.cos(bearing) * Math.max(r, radius * 0.04);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  // Back arc
+  const backAngle = angle + Math.PI;
+  const backR = radius * 0.06;
+  for (let i = 0; i <= 8; i++) {
+    const a = backAngle - Math.PI / 2 + Math.PI * i / 8;
+    ctx.lineTo(cx + Math.sin(a) * backR, cy - Math.cos(a) * backR);
+  }
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function drawConeOutline(ctx, cx, cy, radius, angle) {
+  ctx.beginPath();
+  const halfAngle = 42 * Math.PI / 180;
+  const steps = 40;
+  for (let i = 0; i <= steps; i++) {
+    const t = -1 + 2 * i / steps;
+    const bearing = angle + t * halfAngle;
+    const r = radius * Math.exp(-0.5 * (t * 1.5) ** 2);
+    const x = cx + Math.sin(bearing) * r;
+    const y = cy - Math.cos(bearing) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+// ── Concentration Chart ──
+function drawConcChart() {
+  const canvas = document.getElementById('concChart');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = (rect.width - 16) * 2;
+  canvas.height = 180;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const W = canvas.width / 2, H = canvas.height / 2;
+  const pad = { t: 8, b: 16, l: 28, r: 8 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Axes
+  ctx.strokeStyle = 'rgba(148,163,184,0.3)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, H - pad.b); ctx.lineTo(W - pad.r, H - pad.b); ctx.stroke();
+
+  // ERPG threshold lines
+  const maxC = 100;
+  const thresholds = [
+    { val: 20, color: '#EF4444', label: 'ERPG-3' },
+    { val: 3, color: '#F59E0B', label: 'ERPG-2' },
+    { val: 1, color: '#10B981', label: 'ERPG-1' },
+  ];
+  thresholds.forEach(t => {
+    const y = pad.t + ph * (1 - Math.log10(t.val + 0.1) / Math.log10(maxC));
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = t.color + '60';
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = t.color;
+    ctx.font = '5px Inter';
+    ctx.textAlign = 'right';
+    ctx.fillText(t.label, W - pad.r, y - 2);
+  });
+
+  // Concentration curve
+  ctx.beginPath();
+  ctx.strokeStyle = '#3B82F6';
+  ctx.lineWidth = 1.5;
+  const distances = [];
+  for (let d = 10; d <= 3000; d += 10) distances.push(d);
+  distances.forEach((d, i) => {
+    const c = 500 * Math.exp(-0.003 * d) + 0.01;
+    const x = pad.l + (d / 3000) * pw;
+    const y = pad.t + ph * (1 - Math.max(0, Math.log10(c + 0.1) / Math.log10(maxC)));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Fill under curve
+  ctx.lineTo(pad.l + pw, H - pad.b);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(59,130,246,0.08)';
+  ctx.fill();
+
+  // Labels
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '5px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Distance (m)', W / 2, H - 2);
+  ctx.save();
+  ctx.translate(6, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('ppm', 0, 0);
+  ctx.restore();
+}
+
+// ── Monte Carlo Chart ──
+function drawMCChart() {
+  const canvas = document.getElementById('mcChart');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = (rect.width - 16) * 2;
+  canvas.height = 180;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const W = canvas.width / 2, H = canvas.height / 2;
+  const pad = { t: 8, b: 16, l: 28, r: 8 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Axes
+  ctx.strokeStyle = 'rgba(148,163,184,0.3)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, H - pad.b); ctx.lineTo(W - pad.r, H - pad.b); ctx.stroke();
+
+  // Bars
+  const data = [
+    { d: 100, e1: 0.98, e2: 0.95, e3: 0.82 },
+    { d: 200, e1: 0.92, e2: 0.87, e3: 0.65 },
+    { d: 300, e1: 0.85, e2: 0.73, e3: 0.42 },
+    { d: 500, e1: 0.68, e2: 0.48, e3: 0.18 },
+    { d: 750, e1: 0.45, e2: 0.25, e3: 0.06 },
+    { d: 1000, e1: 0.28, e2: 0.12, e3: 0.02 },
+    { d: 1500, e1: 0.12, e2: 0.04, e3: 0.005 },
+    { d: 2000, e1: 0.05, e2: 0.01, e3: 0.001 },
+    { d: 3000, e1: 0.01, e2: 0.002, e3: 0 },
+  ];
+  const barW = pw / data.length * 0.7;
+  const gap = pw / data.length;
+
+  data.forEach((d, i) => {
+    const x = pad.l + i * gap + gap * 0.15;
+    // ERPG-1
+    ctx.fillStyle = 'rgba(16,185,129,0.5)';
+    ctx.fillRect(x, pad.t + ph * (1 - d.e1), barW, ph * d.e1);
+    // ERPG-2
+    ctx.fillStyle = 'rgba(245,158,11,0.6)';
+    ctx.fillRect(x, pad.t + ph * (1 - d.e2), barW, ph * d.e2);
+    // ERPG-3
+    ctx.fillStyle = 'rgba(239,68,68,0.7)';
+    ctx.fillRect(x, pad.t + ph * (1 - d.e3), barW, ph * d.e3);
+
+    // Distance label
+    ctx.fillStyle = '#64748B';
+    ctx.font = '4.5px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(d.d + 'm', x + barW / 2, H - pad.b + 8);
+  });
+
+  // Legend
+  ctx.font = '5px Inter';
+  const legX = W - pad.r - 50;
+  [[' P(>ERPG-3)', '#EF4444'], [' P(>ERPG-2)', '#F59E0B'], [' P(>ERPG-1)', '#10B981']].forEach(([label, color], i) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(legX, pad.t + i * 10, 6, 6);
+    ctx.fillStyle = '#94A3B8';
+    ctx.fillText(label, legX + 8, pad.t + i * 10 + 5);
+  });
+}
+
+// Init
+window.addEventListener('load', () => {
+  setTimeout(() => { drawMap(); drawConcChart(); drawMCChart(); }, 100);
+});
+window.addEventListener('resize', () => { drawMap(); drawConcChart(); drawMCChart(); });
+</script>
+</body>
+</html>
