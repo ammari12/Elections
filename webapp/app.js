@@ -278,7 +278,7 @@ function distMeters(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.asin(Math.sqrt(Math.min(a,1)));
 }
 
-function findHotspots(lat, lon, r3, r2, r1) {
+function findHotspotsLocal(lat, lon, r3, r2, r1) {
   const zones = {'ERPG-3':[], 'ERPG-2':[], 'ERPG-1':[]};
   for (const h of MAROC_BASE) {
     const d = distMeters(lat, lon, h.lat, h.lon);
@@ -290,9 +290,73 @@ function findHotspots(lat, lon, r3, r2, r1) {
       zones[zone].push({...h, dist: Math.round(d), zone});
     }
   }
+  return zones;
+}
+
+const OSM_AMENITY_MAP = {
+  hospital: { type: 'Hopital', icon: '🏥', priority: 'CRITIQUE', risk: 'Patients vulnerables' },
+  clinic: { type: 'Clinique', icon: '🏥', priority: 'ELEVE', risk: 'Patients vulnerables' },
+  school: { type: 'Ecole', icon: '🏫', priority: 'CRITIQUE', risk: 'Enfants exposes' },
+  kindergarten: { type: 'Creche', icon: '🏫', priority: 'CRITIQUE', risk: 'Jeunes enfants' },
+  university: { type: 'Universite', icon: '🎓', priority: 'ELEVE', risk: 'Etudiants exposes' },
+  fire_station: { type: 'Caserne pompiers', icon: '🚒', priority: 'ELEVE', risk: 'Centre secours' },
+  police: { type: 'Police', icon: '🚔', priority: 'ELEVE', risk: 'Securite publique' },
+  pharmacy: { type: 'Pharmacie', icon: '💊', priority: 'MODERE', risk: 'Point sante' },
+  place_of_worship: { type: 'Lieu de culte', icon: '🕌', priority: 'ELEVE', risk: 'Rassemblement public' },
+  marketplace: { type: 'Marche', icon: '🏪', priority: 'ELEVE', risk: 'Forte affluence' },
+  bus_station: { type: 'Gare routiere', icon: '🚌', priority: 'ELEVE', risk: 'Transport public' },
+  fuel: { type: 'Station-service', icon: '⛽', priority: 'CRITIQUE', risk: 'Risque explosion' },
+  townhall: { type: 'Mairie', icon: '🏛️', priority: 'MODERE', risk: 'Administration' },
+  community_centre: { type: 'Centre communautaire', icon: '🏢', priority: 'MODERE', risk: 'Rassemblement' },
+  nursing_home: { type: 'Maison de retraite', icon: '🏠', priority: 'CRITIQUE', risk: 'Personnes agees' },
+  prison: { type: 'Prison', icon: '🔒', priority: 'CRITIQUE', risk: 'Population confinee' },
+};
+
+async function fetchOSMHotspots(lat, lon, radiusM) {
+  const amenities = Object.keys(OSM_AMENITY_MAP).join('|');
+  const query = `[out:json][timeout:10];(node["amenity"~"${amenities}"](around:${radiusM},${lat},${lon});way["amenity"~"${amenities}"](around:${radiusM},${lat},${lon}););out center;`;
+  try {
+    const resp = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return data.elements.map(el => {
+      const elLat = el.lat || el.center?.lat;
+      const elLon = el.lon || el.center?.lon;
+      if (!elLat || !elLon) return null;
+      const amenity = el.tags?.amenity;
+      const meta = OSM_AMENITY_MAP[amenity];
+      if (!meta) return null;
+      const name = el.tags?.name || el.tags?.['name:fr'] || meta.type;
+      return { lat: elLat, lon: elLon, name, ...meta, source: 'OSM' };
+    }).filter(Boolean);
+  } catch { return []; }
+}
+
+async function findHotspots(lat, lon, r3, r2, r1) {
+  const zones = findHotspotsLocal(lat, lon, r3, r2, r1);
+  const osmResults = await fetchOSMHotspots(lat, lon, r1);
+  const seen = new Set();
+  for (const z of Object.values(zones)) {
+    for (const h of z) seen.add(`${h.lat.toFixed(4)},${h.lon.toFixed(4)}`);
+  }
+  for (const h of osmResults) {
+    const key = `${h.lat.toFixed(4)},${h.lon.toFixed(4)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const d = distMeters(lat, lon, h.lat, h.lon);
+    let zone = null;
+    if (d <= r3) zone = 'ERPG-3';
+    else if (d <= r2) zone = 'ERPG-2';
+    else if (d <= r1) zone = 'ERPG-1';
+    if (zone) zones[zone].push({...h, dist: Math.round(d), zone});
+  }
   for (const z of Object.keys(zones)) {
-    zones[z].sort((a,b) => a.dist - b.dist);
-    zones[z] = zones[z].slice(0, 12);
+    zones[z].sort((a, b) => a.dist - b.dist);
+    zones[z] = zones[z].slice(0, 20);
   }
   return zones;
 }
@@ -629,10 +693,11 @@ function onParamChange() {
 }
 
 // ── SIMULATION ─────────────────────────────────────────────────────────
-function runSimulation() {
+async function runSimulation() {
   const btn = document.getElementById('launchBtn');
   const text = btn.querySelector('.launch-text');
   text.textContent = 'SIMULATION EN COURS...';
+  btn.disabled = true;
   gsap.to(btn, { scale: 0.96, duration: 0.1, yoyo: true, repeat: 1 });
 
   // Compute radii
@@ -646,8 +711,8 @@ function runSimulation() {
   document.getElementById('inputDens').value = autoDens;
   document.getElementById('outputDens').textContent = autoDens.toLocaleString();
 
-  // Find hotspots
-  state.hotspots = findHotspots(state.lat, state.lon, state.r3, state.r2, state.r1);
+  // Find hotspots (async — includes OSM/Overpass API)
+  state.hotspots = await findHotspots(state.lat, state.lon, state.r3, state.r2, state.r1);
 
   // Monte Carlo
   state.mc = monteCarlo(state.Q_kg, state.u_ms, state.stab, state.hauteur, Math.min(state.mcIter, 2000), state.dureeMin, state.typeBrutal);
@@ -658,6 +723,7 @@ function runSimulation() {
 
   setTimeout(() => {
     text.textContent = 'LANCER LA SIMULATION';
+    btn.disabled = false;
     updateUI();
     updateMap();
     updateHotspotsUI();
@@ -1072,7 +1138,7 @@ function drawMCChart() {
 }
 
 // ── LEAFLET MAP ────────────────────────────────────────────────────────
-let map, zoneLayers = [];
+let map, zoneLayers = [], sourceMarker;
 
 function setupMap() {
   map = L.map('map', {
@@ -1107,7 +1173,31 @@ function setupMap() {
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   });
-  L.marker([state.lat, state.lon], { icon: pulseIcon }).addTo(map);
+  sourceMarker = L.marker([state.lat, state.lon], { icon: pulseIcon, draggable: true }).addTo(map);
+
+  sourceMarker.on('dragend', () => {
+    const pos = sourceMarker.getLatLng();
+    state.lat = Math.round(pos.lat * 10000) / 10000;
+    state.lon = Math.round(pos.lng * 10000) / 10000;
+    const latEl = document.getElementById('inputLat');
+    const lonEl = document.getElementById('inputLon');
+    if (latEl) latEl.value = state.lat;
+    if (lonEl) lonEl.value = state.lon;
+    setText('mapCoord', `${state.lat.toFixed(4)}°N, ${Math.abs(state.lon).toFixed(4)}°W`);
+    onParamChange();
+  });
+
+  map.on('click', (e) => {
+    state.lat = Math.round(e.latlng.lat * 10000) / 10000;
+    state.lon = Math.round(e.latlng.lng * 10000) / 10000;
+    sourceMarker.setLatLng([state.lat, state.lon]);
+    const latEl = document.getElementById('inputLat');
+    const lonEl = document.getElementById('inputLon');
+    if (latEl) latEl.value = state.lat;
+    if (lonEl) lonEl.value = state.lon;
+    setText('mapCoord', `${state.lat.toFixed(4)}°N, ${Math.abs(state.lon).toFixed(4)}°W`);
+    onParamChange();
+  });
 
   setText('mapCoord', `${state.lat.toFixed(4)}°N, ${Math.abs(state.lon).toFixed(4)}°W`);
 }
@@ -1208,13 +1298,14 @@ function updateHotspotsUI() {
   if (!table) return;
   const hs = state.hotspots || { 'ERPG-3': [], 'ERPG-2': [], 'ERPG-1': [] };
   let html = `<thead><tr>
-    <th>Site</th><th>Type</th><th>Zone</th><th>Distance</th><th>Priorite</th><th>Risque</th>
+    <th>Site</th><th>Type</th><th>Zone</th><th>Distance</th><th>Priorite</th><th>Risque</th><th>Source</th>
   </tr></thead><tbody>`;
   let count = 0;
   for (const zone of ['ERPG-3', 'ERPG-2', 'ERPG-1']) {
     const cls = zone === 'ERPG-3' ? 'erpg3' : zone === 'ERPG-2' ? 'erpg2' : 'erpg1';
     for (const h of (hs[zone] || [])) {
       const prioCls = h.priority === 'CRITIQUE' ? 'critique' : h.priority === 'ELEVE' ? 'eleve' : 'modere';
+      const srcBadge = h.source === 'OSM' ? '<span style="background:#3B82F6;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">OSM</span>' : '<span style="background:#6B7280;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;">BASE</span>';
       html += `<tr>
         <td><strong>${h.icon} ${h.name}</strong></td>
         <td>${h.type}</td>
@@ -1222,12 +1313,13 @@ function updateHotspotsUI() {
         <td>${h.dist} m</td>
         <td><span class="priority-badge ${prioCls}">${h.priority}</span></td>
         <td>${h.risk}</td>
+        <td>${srcBadge}</td>
       </tr>`;
       count++;
     }
   }
   if (count === 0) {
-    html += '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Aucun hotspot detecte dans les zones d\'impact</td></tr>';
+    html += '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Aucun hotspot detecte dans les zones d\'impact</td></tr>';
   }
   html += '</tbody>';
   table.innerHTML = html;
@@ -1481,6 +1573,90 @@ function generatePDF() {
     margin: { left: 15, right: 15 },
   });
 
+  // ── PAGE 3b: DECISION & KPIs ──────────────────────────────────
+  y = doc.lastAutoTable.finalY + 10;
+
+  doc.setFontSize(10);
+  doc.setTextColor(...NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Decision operationnelle', 15, y);
+  y += 5;
+
+  const arrival = state.distPop / Math.max(state.u_ms, 0.1) / 60;
+  const Q_kgs_pdf = qDebit(state.Q_kg, state.dureeMin, state.typeBrutal);
+  const cPop = concPPM(Q_kgs_pdf, state.u_ms, state.distPop, 0, state.stab);
+  let decisionLabel, decisionDetail;
+  if (state.distPop <= state.r3) {
+    decisionLabel = 'CONFINEMENT OBLIGATOIRE';
+    decisionDetail = `Population a ${state.distPop}m en zone ROUGE ERPG-3 (${Math.round(state.r3)}m). Evacuation = exposition directe a >20ppm Cl2.`;
+  } else if (state.distPop <= state.r2) {
+    decisionLabel = arrival * 60 > state.delaiEvac ? 'EVACUATION POSSIBLE' : 'CONFINEMENT';
+    decisionDetail = `Population a ${state.distPop}m en zone ORANGE ERPG-2 (${Math.round(state.r2)}m).`;
+  } else {
+    decisionLabel = 'PAS D\'ACTION IMMEDIATE';
+    decisionDetail = `Population a ${state.distPop}m en dehors des zones ERPG.`;
+  }
+
+  doc.autoTable({
+    startY: y,
+    head: [['Indicateur', 'Valeur']],
+    body: [
+      ['Decision', decisionLabel],
+      ['Detail', decisionDetail],
+      ['Concentration a pop.', `${cPop.toFixed(3)} ppm`],
+      ['Temps d\'arrivee nuage', `${arrival.toFixed(1)} min`],
+      ['Deces estimes', deaths.toString()],
+      ['Debit source', `${Q_kgs_pdf.toFixed(2)} kg/s`],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontSize: 7 },
+    bodyStyles: { fontSize: 7 },
+    margin: { left: 15, right: 15 },
+  });
+
+  // Gravity breakdown
+  y = doc.lastAutoTable.finalY + 8;
+  if (y > 240) { doc.addPage(); addPageHeader(doc, doc.internal.getNumberOfPages(), refStr); y = 25; }
+
+  doc.setFontSize(10);
+  doc.setTextColor(...NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Decomposition de l\'indice de gravite', 15, y);
+  y += 5;
+
+  const brutM = state.typeBrutal ? 1.3 : 1.0;
+  const stabM = { A: 0.7, B: 0.85, C: 0.95, D: 1.0, E: 1.1, F: 1.2 }[state.stab] || 1.0;
+  const densM = 0.8 + 0.4 * Math.min(Math.log10(Math.max(state.densPop, 1)) / Math.log10(15001), 1);
+  const alerteM = state.earlyWarning ? 0.78 : 1.0;
+  const epiM = Math.max(0.6, 1.0 - (state.ppeLevel - 1) * 0.1);
+  const evacM = Math.max(0.75, 1.0 - Math.max(0, state.delaiEvac - 15) / 200);
+  const coordM = Math.max(0.72, 1.0 - (state.coordSec - 1) * 0.09);
+  const capaM = {1: 1.15, 2: 1.0, 3: 0.9}[state.capaMed] || 1.0;
+  const dominoM = state.dominoEffect ? 1.15 : 1.0;
+  const trainM = state.hasTrain ? 1.06 : 1.0;
+
+  doc.autoTable({
+    startY: y,
+    head: [['Modificateur', 'Valeur', 'Effet']],
+    body: [
+      ['Type liberation (brutal)', brutM.toFixed(2), brutM > 1 ? 'Aggravant' : 'Neutre'],
+      ['Stabilite atmospherique', stabM.toFixed(2), stabM > 1 ? 'Aggravant' : stabM < 1 ? 'Attenuant' : 'Neutre'],
+      ['Densite population', densM.toFixed(2), densM > 1 ? 'Aggravant' : 'Neutre'],
+      ['Alerte precoce', alerteM.toFixed(2), alerteM < 1 ? 'Attenuant' : 'Neutre'],
+      ['Niveau EPI', epiM.toFixed(2), epiM < 1 ? 'Attenuant' : 'Neutre'],
+      ['Delai evacuation', evacM.toFixed(2), evacM < 1 ? 'Attenuant' : 'Neutre'],
+      ['Coordination secours', coordM.toFixed(2), coordM < 1 ? 'Attenuant' : 'Neutre'],
+      ['Capacite medicale', capaM.toFixed(2), capaM > 1 ? 'Aggravant' : capaM < 1 ? 'Attenuant' : 'Neutre'],
+      ['Effet domino', dominoM.toFixed(2), dominoM > 1 ? 'Aggravant' : 'Neutre'],
+      ['Voie ferree', trainM.toFixed(2), trainM > 1 ? 'Aggravant' : 'Neutre'],
+      ['INDICE FINAL', state.gravite.toFixed(1) + ' / 10', g >= 7 ? 'CRITIQUE' : g >= 4 ? 'ELEVE' : 'MODERE'],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontSize: 7 },
+    bodyStyles: { fontSize: 6.5 },
+    margin: { left: 15, right: 15 },
+  });
+
   // ── PAGE 4: MONTE CARLO ────────────────────────────────────────
   doc.addPage();
   addPageHeader(doc, 4, refStr);
@@ -1517,20 +1693,26 @@ function generatePDF() {
     });
   }
 
-  // ── PAGE 5: HOTSPOTS ───────────────────────────────────────────
+  // ── PAGE: HOTSPOTS ──────────────────────────────────────────────
   const hs = state.hotspots || {};
   const allHs = [...(hs['ERPG-3'] || []), ...(hs['ERPG-2'] || []), ...(hs['ERPG-1'] || [])];
+
+  doc.addPage();
+  let pgNum = doc.internal.getNumberOfPages();
+  addPageHeader(doc, pgNum, refStr);
+
+  doc.setFontSize(12);
+  doc.setTextColor(...NAVY);
+  doc.setFont('helvetica', 'bold');
+  doc.text('04  INVENTAIRE DES HOTSPOTS IDENTIFIES', 15, 25);
+  doc.setDrawColor(...GOLD);
+  doc.line(15, 27, W - 15, 27);
+  doc.setFontSize(7);
+  doc.setTextColor(100, 100, 100);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Sources : Base MAROC (120+ sites) + OpenStreetMap / Overpass API (temps reel)', 15, 32);
+
   if (allHs.length > 0) {
-    doc.addPage();
-    addPageHeader(doc, 5, refStr);
-
-    doc.setFontSize(12);
-    doc.setTextColor(...NAVY);
-    doc.setFont('helvetica', 'bold');
-    doc.text('04  INVENTAIRE DES HOTSPOTS IDENTIFIES', 15, 25);
-    doc.setDrawColor(...GOLD);
-    doc.line(15, 27, W - 15, 27);
-
     const hsRows = [];
     for (const zone of ['ERPG-3', 'ERPG-2', 'ERPG-1']) {
       for (const h of (hs[zone] || [])) {
@@ -1541,18 +1723,18 @@ function generatePDF() {
           `${h.dist} m`,
           h.priority,
           h.risk,
-          `${h.lat.toFixed(4)}N ${h.lon.toFixed(4)}E`,
+          h.source || 'MAROC_BASE',
         ]);
       }
     }
     doc.autoTable({
-      startY: 32,
-      head: [['', 'Etablissement', 'Zone', 'Distance', 'Priorite', 'Risque', 'Coordonnees']],
+      startY: 36,
+      head: [['', 'Etablissement', 'Zone', 'Distance', 'Priorite', 'Risque', 'Source']],
       body: hsRows,
       theme: 'grid',
       headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontSize: 7 },
       bodyStyles: { fontSize: 6.5 },
-      columnStyles: { 0: { cellWidth: 8 }, 6: { fontSize: 5.5 } },
+      columnStyles: { 0: { cellWidth: 8 } },
       margin: { left: 15, right: 15 },
       didParseCell: (data) => {
         if (data.section === 'body') {
@@ -1563,17 +1745,22 @@ function generatePDF() {
         }
       },
     });
+  } else {
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Aucun hotspot detecte dans les zones d\'impact.', W / 2, 50, { align: 'center' });
   }
 
-  // ── PAGE 6: OPERATIONS ─────────────────────────────────────────
+  // ── PAGE: OPERATIONS ───────────────────────────────────────────
   doc.addPage();
-  addPageHeader(doc, allHs.length > 0 ? 6 : 5, refStr);
+  pgNum = doc.internal.getNumberOfPages();
+  addPageHeader(doc, pgNum, refStr);
 
   doc.setFontSize(12);
   doc.setTextColor(...NAVY);
   doc.setFont('helvetica', 'bold');
-  const opNum = allHs.length > 0 ? '05' : '04';
-  doc.text(`${opNum}  ORGANISATION DES SECOURS — PLAN ORSEC`, 15, 25);
+  doc.text('05  ORGANISATION DES SECOURS — PLAN ORSEC', 15, 25);
   doc.setDrawColor(...GOLD);
   doc.line(15, 27, W - 15, 27);
 
