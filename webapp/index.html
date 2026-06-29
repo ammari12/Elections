@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HazMod — NRBC Decision Support System</title>
+  <title>HazMod — Systeme d'Aide a la Decision NRBC</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☣️</text></svg>"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -13,6 +13,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
@@ -37,31 +39,31 @@
         </svg>
       </div>
       <h1 class="loader-title">HAZ<span>MOD</span></h1>
-      <p class="loader-sub">Hazardous Materials Modeling System</p>
+      <p class="loader-sub">Systeme de Modelisation des Matieres Dangereuses</p>
       <div class="loader-steps">
         <div class="loader-step" data-step="0">
           <span class="step-icon">📊</span>
-          <span class="step-label">Loading historical data</span>
+          <span class="step-label">Chargement des donnees historiques</span>
           <div class="step-bar"><div class="step-fill"></div></div>
         </div>
         <div class="loader-step" data-step="1">
           <span class="step-icon">🤖</span>
-          <span class="step-label">Training Random Forest</span>
+          <span class="step-label">Entrainement Random Forest</span>
           <div class="step-bar"><div class="step-fill"></div></div>
         </div>
         <div class="loader-step" data-step="2">
           <span class="step-icon">🗺️</span>
-          <span class="step-label">Morocco hotspots (122 sites)</span>
+          <span class="step-label">Hotspots Maroc (122 sites)</span>
           <div class="step-bar"><div class="step-fill"></div></div>
         </div>
         <div class="loader-step" data-step="3">
           <span class="step-icon">🌍</span>
-          <span class="step-label">Pasquill-Gifford atmosphere</span>
+          <span class="step-label">Atmosphere Pasquill-Gifford</span>
           <div class="step-bar"><div class="step-fill"></div></div>
         </div>
         <div class="loader-step" data-step="4">
           <span class="step-icon">⚙️</span>
-          <span class="step-label">Monte Carlo initialization</span>
+          <span class="step-label">Initialisation Monte Carlo</span>
           <div class="step-bar"><div class="step-fill"></div></div>
         </div>
       </div>
@@ -87,17 +89,17 @@
       <span class="nav-version">NRBC v3.0</span>
     </div>
     <div class="nav-tabs" id="navTabs">
-      <button class="nav-tab active" data-section="hero">Overview</button>
+      <button class="nav-tab active" data-section="hero">Apercu</button>
       <button class="nav-tab" data-section="simulation">Simulation</button>
-      <button class="nav-tab" data-section="map-section">Cartography</button>
-      <button class="nav-tab" data-section="dashboard">Dashboard</button>
+      <button class="nav-tab" data-section="map-section">Cartographie</button>
+      <button class="nav-tab" data-section="dashboard">Tableau de bord</button>
       <button class="nav-tab" data-section="monte-carlo">Monte Carlo</button>
       <button class="nav-tab" data-section="operations">Operations</button>
     </div>
     <div class="nav-right">
       <div class="nav-status">
         <span class="status-dot"></span>
-        <span class="status-text">System Online</span>
+        <span class="status-text">Systeme en ligne</span>
       </div>
       <button class="nav-btn" id="settingsBtn" title="Settings">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -120,39 +122,39 @@
           <span class="hero-badge blue">Machine Learning</span>
         </div>
         <h1 class="hero-title">
-          <span class="hero-line">Hazardous Materials</span>
-          <span class="hero-line accent">Modeling System</span>
+          <span class="hero-line">Matieres Dangereuses</span>
+          <span class="hero-line accent">Systeme de Modelisation</span>
         </h1>
         <p class="hero-desc">
-          Probabilistic chlorine (Cl₂) chemical risk assessment system.
-          Commission Nationale NRBC — Ministere de l'Interieur, Morocco.
+          Systeme d'evaluation probabiliste des risques chimiques au chlore (Cl₂).
+          Commission Nationale NRBC — Ministere de l'Interieur, Maroc.
         </p>
         <div class="hero-actions">
           <button class="btn-primary" id="startSimBtn">
             <span class="btn-icon">🚀</span>
-            <span>Launch Simulation</span>
+            <span>Lancer la Simulation</span>
           </button>
           <button class="btn-ghost" id="viewDashBtn">
-            <span>View Dashboard</span>
+            <span>Voir le Tableau de bord</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
         </div>
         <div class="hero-stats">
           <div class="hero-stat" data-value="81">
             <span class="stat-number" id="statAccidents">0</span>
-            <span class="stat-label">Historical Accidents</span>
+            <span class="stat-label">Accidents historiques</span>
           </div>
           <div class="hero-stat" data-value="122">
             <span class="stat-number" id="statHotspots">0</span>
-            <span class="stat-label">Morocco Hotspots</span>
+            <span class="stat-label">Hotspots Maroc</span>
           </div>
           <div class="hero-stat" data-value="2000">
             <span class="stat-number" id="statMC">0</span>
-            <span class="stat-label">MC Iterations</span>
+            <span class="stat-label">Iterations MC</span>
           </div>
           <div class="hero-stat" data-value="6">
             <span class="stat-number" id="statStab">0</span>
-            <span class="stat-label">Stability Classes</span>
+            <span class="stat-label">Classes de stabilite</span>
           </div>
         </div>
       </div>
@@ -160,7 +162,7 @@
         <!-- 3D gas dispersion visualization rendered here -->
       </div>
       <div class="scroll-indicator" id="scrollIndicator">
-        <span>Scroll to explore</span>
+        <span>Defiler pour explorer</span>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
       </div>
     </section>
@@ -169,8 +171,8 @@
     <section id="simulation" class="section">
       <div class="section-header">
         <div class="section-tag">01</div>
-        <h2 class="section-title">Incident Configuration</h2>
-        <p class="section-sub">Define the chlorine release scenario parameters</p>
+        <h2 class="section-title">Configuration de l'Incident</h2>
+        <p class="section-sub">Definir les parametres du scenario de rejet de chlore</p>
       </div>
 
       <div class="sim-grid">
@@ -178,32 +180,32 @@
         <div class="sim-card" data-reveal>
           <div class="sim-card-header">
             <span class="sim-card-icon">☢</span>
-            <h3>Chlorine Source</h3>
+            <h3>Source de Chlore</h3>
           </div>
           <div class="sim-card-body">
             <div class="input-group">
-              <label>Quantity Cl₂ Released (kg)</label>
+              <label>Quantite Cl₂ liberee (kg)</label>
               <div class="input-range-wrap">
                 <input type="range" id="inputQ" min="10" max="100000" value="9000" step="100"/>
                 <output id="outputQ">9,000 kg</output>
               </div>
             </div>
             <div class="input-group">
-              <label>Release Type</label>
+              <label>Type de liberation</label>
               <div class="toggle-group" id="releaseType">
                 <button class="toggle-btn" data-value="progressive">Progressive</button>
                 <button class="toggle-btn active" data-value="brutal">Brutal</button>
               </div>
             </div>
             <div class="input-group">
-              <label>Release Duration (min)</label>
+              <label>Duree de liberation (min)</label>
               <div class="input-range-wrap">
                 <input type="range" id="inputDuration" min="1" max="480" value="60" step="1"/>
                 <output id="outputDuration">60 min</output>
               </div>
             </div>
             <div class="input-group">
-              <label>Source Height (m)</label>
+              <label>Hauteur de la source (m)</label>
               <div class="input-range-wrap">
                 <input type="range" id="inputHeight" min="0" max="30" value="2" step="1"/>
                 <output id="outputHeight">2 m</output>
@@ -211,7 +213,7 @@
             </div>
             <div class="debit-indicator" id="debitIndicator">
               <span class="debit-icon">⚡</span>
-              <span>Effective flow rate: <strong id="debitValue">2.50 kg/s</strong></span>
+              <span>Debit effectif: <strong id="debitValue">2.50 kg/s</strong></span>
             </div>
           </div>
         </div>
@@ -220,18 +222,18 @@
         <div class="sim-card" data-reveal>
           <div class="sim-card-header">
             <span class="sim-card-icon">🌬</span>
-            <h3>Meteorology</h3>
+            <h3>Meteorologie</h3>
           </div>
           <div class="sim-card-body">
             <div class="input-group">
-              <label>Wind Speed (m/s)</label>
+              <label>Vitesse du vent (m/s)</label>
               <div class="input-range-wrap">
                 <input type="range" id="inputWind" min="0.5" max="10" value="5" step="0.1"/>
                 <output id="outputWind">5.0 m/s</output>
               </div>
             </div>
             <div class="input-group">
-              <label>Wind Direction (°, 0=N)</label>
+              <label>Direction du vent (°, 0=N)</label>
               <div class="wind-compass" id="windCompass">
                 <div class="compass-ring">
                   <div class="compass-needle" id="compassNeedle"></div>
@@ -245,7 +247,7 @@
               </div>
             </div>
             <div class="input-group">
-              <label>Atmospheric Stability</label>
+              <label>Stabilite atmospherique</label>
               <div class="stability-selector" id="stabSelector">
                 <button class="stab-btn" data-stab="A">A</button>
                 <button class="stab-btn" data-stab="B">B</button>
@@ -255,9 +257,9 @@
                 <button class="stab-btn" data-stab="F">F</button>
               </div>
               <div class="stab-legend">
-                <span class="stab-leg-item">A: Very Unstable</span>
+                <span class="stab-leg-item">A: Tres instable</span>
                 <span class="stab-leg-sep">→</span>
-                <span class="stab-leg-item">F: Very Stable</span>
+                <span class="stab-leg-item">F: Tres stable</span>
               </div>
             </div>
           </div>
@@ -267,7 +269,7 @@
         <div class="sim-card" data-reveal>
           <div class="sim-card-header">
             <span class="sim-card-icon">📍</span>
-            <h3>Location</h3>
+            <h3>Localisation</h3>
           </div>
           <div class="sim-card-body">
             <div class="coord-inputs">
@@ -283,7 +285,7 @@
             <div class="input-group">
               <label>Region</label>
               <select id="regionSelect" class="select-input">
-                <option value="">— Select a region —</option>
+                <option value="">— Selectionner une region —</option>
                 <option value="rabat">Rabat-Sale-Kenitra</option>
                 <option value="casa">Casablanca-Settat</option>
                 <option value="fes">Fes-Meknes</option>
@@ -296,18 +298,18 @@
             <div class="input-group">
               <label>Site Configuration</label>
               <select id="siteConfig" class="select-input">
-                <option>Chemical Plant</option>
-                <option>Industrial Zone</option>
-                <option selected>Semi-open Port</option>
-                <option>Urban Port</option>
-                <option>Railway (mixed)</option>
-                <option>Urban Zone</option>
-                <option>Rural Zone</option>
-                <option>Water Station</option>
+                <option>Usine chimique</option>
+                <option>Zone industrielle</option>
+                <option selected>Port semi-ouvert</option>
+                <option>Port urbain</option>
+                <option>Voie ferree (mixte)</option>
+                <option>Zone urbaine</option>
+                <option>Zone rurale</option>
+                <option>Station de traitement d'eau</option>
               </select>
             </div>
             <div class="input-group">
-              <label>Population Density (hab/km²)</label>
+              <label>Densite de population (hab/km²)</label>
               <div class="input-range-wrap">
                 <input type="range" id="inputDens" min="10" max="15000" value="2000" step="100"/>
                 <output id="outputDens">2,000</output>
@@ -324,47 +326,90 @@
         <div class="sim-card" data-reveal>
           <div class="sim-card-header">
             <span class="sim-card-icon">🚒</span>
-            <h3>Emergency Response</h3>
+            <h3>Reponse d'urgence</h3>
           </div>
           <div class="sim-card-body">
             <div class="input-group">
-              <label>PPE Level</label>
+              <label>Niveau EPI</label>
               <div class="toggle-group" id="ppeLevel">
-                <button class="toggle-btn" data-value="1">Level 1</button>
-                <button class="toggle-btn active" data-value="2">Level 2</button>
-                <button class="toggle-btn" data-value="3">Level 3</button>
-                <button class="toggle-btn" data-value="4">Level 4</button>
+                <button class="toggle-btn" data-value="1">Niveau 1</button>
+                <button class="toggle-btn active" data-value="2">Niveau 2</button>
+                <button class="toggle-btn" data-value="3">Niveau 3</button>
+                <button class="toggle-btn" data-value="4">Niveau 4</button>
               </div>
             </div>
             <div class="input-group">
-              <label>Early Warning</label>
+              <label>Alerte precoce</label>
               <label class="switch">
                 <input type="checkbox" id="earlyWarning"/>
                 <span class="switch-slider"></span>
-                <span class="switch-label">Activated</span>
+                <span class="switch-label">Activee</span>
               </label>
             </div>
             <div class="input-group">
-              <label>Evacuation Delay (min)</label>
+              <label>Delai d'evacuation (min)</label>
               <div class="input-range-wrap">
                 <input type="range" id="inputEvac" min="5" max="120" value="30" step="1"/>
                 <output id="outputEvac">30 min</output>
               </div>
             </div>
             <div class="input-group">
-              <label>Rescue Coordination (1–4)</label>
+              <label>Coordination secours (1–4)</label>
               <div class="input-range-wrap">
                 <input type="range" id="inputCoord" min="1" max="4" value="2" step="1"/>
                 <output id="outputCoord">2</output>
               </div>
             </div>
             <div class="input-group">
-              <label>Monte Carlo Iterations</label>
+              <label>Iterations Monte Carlo</label>
               <div class="toggle-group" id="mcIter">
                 <button class="toggle-btn" data-value="500">500</button>
                 <button class="toggle-btn active" data-value="2000">2K</button>
                 <button class="toggle-btn" data-value="5000">5K</button>
                 <button class="toggle-btn" data-value="10000">10K</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Distance & Medical Card -->
+        <div class="sim-card" data-reveal>
+          <div class="sim-card-header">
+            <span class="sim-card-icon">📏</span>
+            <h3>Distance & Capacite Medicale</h3>
+          </div>
+          <div class="sim-card-body">
+            <div class="input-group">
+              <label>Distance a la population (m)</label>
+              <div class="input-range-wrap">
+                <input type="range" id="inputDistPop" min="50" max="5000" value="300" step="50"/>
+                <output id="outputDistPop">300 m</output>
+              </div>
+            </div>
+            <div class="input-group">
+              <label>Capacite medicale</label>
+              <div class="toggle-group" id="capaMed">
+                <button class="toggle-btn active" data-value="1">Limitee</button>
+                <button class="toggle-btn" data-value="2">Moyenne</button>
+                <button class="toggle-btn" data-value="3">Bonne</button>
+              </div>
+            </div>
+            <div class="input-group">
+              <label>Sites effet domino</label>
+              <label class="switch">
+                <input type="checkbox" id="dominoEffect"/>
+                <span class="switch-slider"></span>
+                <span class="switch-label">Presence de sites industriels</span>
+              </label>
+            </div>
+            <div class="input-group">
+              <label>Proximite de sites sensibles</label>
+              <div class="proximity-toggles">
+                <label class="switch"><input type="checkbox" id="hasTrain"/><span class="switch-slider"></span><span class="switch-label">Voie ferree</span></label>
+                <label class="switch"><input type="checkbox" id="hasHopital"/><span class="switch-slider"></span><span class="switch-label">Hopital</span></label>
+                <label class="switch"><input type="checkbox" id="hasEcole"/><span class="switch-slider"></span><span class="switch-label">Ecole</span></label>
+                <label class="switch"><input type="checkbox" id="hasAdmin"/><span class="switch-slider"></span><span class="switch-label">Centre admin.</span></label>
+                <label class="switch"><input type="checkbox" id="hasGare"/><span class="switch-slider"></span><span class="switch-label">Gare routiere</span></label>
               </div>
             </div>
           </div>
@@ -376,7 +421,7 @@
         <button class="launch-btn" id="launchBtn">
           <div class="launch-glow"></div>
           <span class="launch-icon">🚀</span>
-          <span class="launch-text">LAUNCH SIMULATION</span>
+          <span class="launch-text">LANCER LA SIMULATION</span>
           <div class="launch-particles" id="launchParticles"></div>
         </button>
       </div>
@@ -386,8 +431,8 @@
     <section id="map-section" class="section">
       <div class="section-header">
         <div class="section-tag">02</div>
-        <h2 class="section-title">Cartography & Risk Zones</h2>
-        <p class="section-sub">ERPG impact zones with oriented Gaussian plume model</p>
+        <h2 class="section-title">Cartographie & Zones de Risque</h2>
+        <p class="section-sub">Zones d'impact ERPG avec modele de panache gaussien oriente</p>
       </div>
       <div class="map-container" data-reveal>
         <div class="map-toolbar">
@@ -426,7 +471,7 @@
             <div class="legend-sep"></div>
             <div class="legend-row">
               <span class="legend-swatch" style="background:#92400E;border-style:dashed;"></span>
-              <span class="legend-label">Evacuation perimeter</span>
+              <span class="legend-label">Perimetre d'evacuation</span>
               <span class="legend-val" id="legEvac">— m</span>
             </div>
           </div>
@@ -443,29 +488,54 @@
           <div class="zone-icon">🔴</div>
           <div class="zone-value" id="zoneR3">—</div>
           <div class="zone-name">ERPG-3 · DANGER VITAL</div>
-          <div class="zone-threshold">threshold 20 ppm</div>
-          <div class="zone-action">Total evacuation · PPE A · UMA</div>
+          <div class="zone-threshold">seuil 20 ppm</div>
+          <div class="zone-action">Evacuation totale · EPI A · UMA</div>
         </div>
         <div class="zone-card orange" data-reveal>
           <div class="zone-icon">🟠</div>
           <div class="zone-value" id="zoneR2">—</div>
           <div class="zone-name">ERPG-2 · IRREVERSIBLE</div>
-          <div class="zone-threshold">threshold 3 ppm</div>
-          <div class="zone-action">Partial evacuation · ERP closure</div>
+          <div class="zone-threshold">seuil 3 ppm</div>
+          <div class="zone-action">Evacuation partielle · Fermeture ERP</div>
         </div>
         <div class="zone-card green" data-reveal>
           <div class="zone-icon">🟢</div>
           <div class="zone-value" id="zoneR1">—</div>
           <div class="zone-name">ERPG-1 · IRRITATION</div>
-          <div class="zone-threshold">threshold 1 ppm</div>
-          <div class="zone-action">Surveillance · Preventive shelter</div>
+          <div class="zone-threshold">seuil 1 ppm</div>
+          <div class="zone-action">Surveillance · Confinement preventif</div>
         </div>
         <div class="zone-card gold" data-reveal>
           <div class="zone-icon">⚡</div>
           <div class="zone-value" id="zoneEvac">—</div>
-          <div class="zone-name">EVACUATION PERIMETER</div>
-          <div class="zone-threshold">mandatory zone</div>
-          <div class="zone-action">Evacuate all persons immediately</div>
+          <div class="zone-name">PERIMETRE D'EVACUATION</div>
+          <div class="zone-threshold">zone obligatoire</div>
+          <div class="zone-action">Evacuer toutes les personnes immediatement</div>
+        </div>
+      </div>
+
+      <!-- Hotspots Table -->
+      <div class="hotspots-section" id="hotspotsSection" data-reveal>
+        <div class="hotspots-header">
+          <h3>Points Sensibles Identifies</h3>
+          <span class="hotspots-count" id="hotspotsCount">0 sites</span>
+        </div>
+        <div class="hotspots-table-wrap">
+          <table class="hotspots-table" id="hotspotsTable">
+            <thead>
+              <tr>
+                <th>Zone</th>
+                <th>Etablissement</th>
+                <th>Type</th>
+                <th>Distance</th>
+                <th>Priorite</th>
+                <th>Risque</th>
+              </tr>
+            </thead>
+            <tbody id="hotspotsBody">
+              <tr><td colspan="6" class="hotspots-empty">Lancez la simulation pour detecter les points sensibles</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -474,56 +544,65 @@
     <section id="dashboard" class="section">
       <div class="section-header">
         <div class="section-tag">03</div>
-        <h2 class="section-title">Decision Dashboard</h2>
-        <p class="section-sub">Real-time KPIs and severity assessment</p>
+        <h2 class="section-title">Tableau de Decision</h2>
+        <p class="section-sub">KPIs et evaluation de la gravite en temps reel</p>
       </div>
 
       <!-- Decision Banner -->
       <div class="decision-banner" id="decisionBanner" data-reveal>
-        <div class="decision-label" id="decisionLabel">AWAITING SIMULATION</div>
-        <div class="decision-detail" id="decisionDetail">Configure parameters and launch simulation</div>
+        <div class="decision-label" id="decisionLabel">EN ATTENTE DE SIMULATION</div>
+        <div class="decision-detail" id="decisionDetail">Configurez les parametres et lancez la simulation</div>
         <div class="decision-physics" id="decisionPhysics"></div>
       </div>
 
       <!-- KPI Grid -->
       <div class="kpi-grid">
         <div class="kpi-card danger" data-reveal>
-          <div class="kpi-label">Severity Index</div>
+          <div class="kpi-label">Indice de Gravite</div>
           <div class="kpi-value" id="kpiGravity">—</div>
           <div class="kpi-sub" id="kpiGravitySub">G / 10</div>
           <div class="kpi-bar"><div class="kpi-fill" id="kpiGravityFill"></div></div>
         </div>
         <div class="kpi-card warning" data-reveal>
-          <div class="kpi-label">Exposed Population</div>
+          <div class="kpi-label">Population Exposee</div>
           <div class="kpi-value" id="kpiPop">—</div>
-          <div class="kpi-sub">in ERPG-2 zone</div>
+          <div class="kpi-sub">en zone ERPG-2</div>
         </div>
         <div class="kpi-card info" data-reveal>
-          <div class="kpi-label">Estimated Injuries</div>
+          <div class="kpi-label">Blesses Estimes</div>
           <div class="kpi-value" id="kpiInjuries">—</div>
-          <div class="kpi-sub" id="kpiInjuriesSub">serious + minor</div>
+          <div class="kpi-sub" id="kpiInjuriesSub">graves + legers</div>
         </div>
         <div class="kpi-card ok" data-reveal>
           <div class="kpi-label">MC P(C>ERPG-2)</div>
           <div class="kpi-value" id="kpiMC">—</div>
-          <div class="kpi-sub">at population distance</div>
+          <div class="kpi-sub">a la distance population</div>
         </div>
         <div class="kpi-card info" data-reveal>
-          <div class="kpi-label">Cloud Arrival</div>
+          <div class="kpi-label">Arrivee du Nuage</div>
           <div class="kpi-value" id="kpiArrival">—</div>
-          <div class="kpi-sub">at population distance</div>
+          <div class="kpi-sub">a la distance population</div>
         </div>
         <div class="kpi-card danger" data-reveal>
-          <div class="kpi-label">Estimated Deaths</div>
+          <div class="kpi-label">Deces Estimes</div>
           <div class="kpi-value" id="kpiDeaths">—</div>
-          <div class="kpi-sub">if G ≥ 5</div>
+          <div class="kpi-sub">si G ≥ 5</div>
         </div>
+      </div>
+
+      <!-- PDF Report Button -->
+      <div class="pdf-section" data-reveal>
+        <button class="pdf-btn" id="pdfBtn" onclick="generatePDF()">
+          <span class="pdf-icon">📄</span>
+          <span>Generer le Rapport PDF</span>
+        </button>
+        <span class="pdf-hint">Rapport ministeriel complet en francais</span>
       </div>
 
       <!-- Concentration Profile Chart -->
       <div class="chart-container" data-reveal>
         <div class="chart-header">
-          <h3>Axial Concentration Profile</h3>
+          <h3>Profil de Concentration Axial</h3>
           <span class="chart-tag">Pasquill-Gifford · Briggs 1973</span>
         </div>
         <canvas id="concChart" height="300"></canvas>
@@ -534,19 +613,19 @@
     <section id="monte-carlo" class="section">
       <div class="section-header">
         <div class="section-tag">04</div>
-        <h2 class="section-title">Monte Carlo Analysis</h2>
-        <p class="section-sub">Probabilistic uncertainty quantification</p>
+        <h2 class="section-title">Analyse Monte Carlo</h2>
+        <p class="section-sub">Quantification probabiliste de l'incertitude</p>
       </div>
       <div class="mc-grid">
         <div class="mc-chart-wrap" data-reveal>
           <div class="chart-header">
-            <h3>Probability of Exceedance by Distance</h3>
+            <h3>Probabilite de Depassement par Distance</h3>
             <span class="chart-tag" id="mcIterCount">N=2,000</span>
           </div>
           <canvas id="mcChart" height="350"></canvas>
         </div>
         <div class="mc-stats" data-reveal>
-          <h3 class="mc-stats-title">Statistics at Population Distance</h3>
+          <h3 class="mc-stats-title">Statistiques a la Distance Population</h3>
           <div class="mc-stat-grid" id="mcStatGrid">
             <div class="mc-stat-item">
               <span class="mc-stat-label">Median (P50)</span>
@@ -575,7 +654,7 @@
           </div>
           <div class="mc-alert" id="mcAlert">
             <div class="mc-alert-icon">⚠</div>
-            <div class="mc-alert-text" id="mcAlertText">Launch simulation for Monte Carlo results</div>
+            <div class="mc-alert-text" id="mcAlertText">Lancez la simulation pour les resultats Monte Carlo</div>
           </div>
         </div>
       </div>
@@ -585,8 +664,8 @@
     <section id="operations" class="section">
       <div class="section-header">
         <div class="section-tag">05</div>
-        <h2 class="section-title">Emergency Operations</h2>
-        <p class="section-sub">ORSEC response protocol and timeline</p>
+        <h2 class="section-title">Operations d'Urgence</h2>
+        <p class="section-sub">Protocole de reponse ORSEC et chronologie</p>
       </div>
 
       <!-- Timeline -->
@@ -616,29 +695,29 @@
         <div class="ops-card" data-reveal>
           <div class="ops-header" style="background:linear-gradient(135deg,#1E40AF,#3B82F6);">
             <span class="ops-phase">1</span>
-            <h4>Command Takeover</h4>
+            <h4>Prise de Commandement</h4>
             <span class="ops-time">T0 → T+25 min</span>
           </div>
           <div class="ops-body">
             <div class="ops-action">
               <span class="ops-dot blue"></span>
               <div>
-                <strong>CTA Alert Reception</strong>
-                <p>Full call identification, precise localization, SITAC trigger</p>
+                <strong>Reception alerte CTA</strong>
+                <p>Identification complete de l'appel, localisation precise, declenchement SITAC</p>
               </div>
             </div>
             <div class="ops-action">
               <span class="ops-dot blue"></span>
               <div>
-                <strong>Reflex Zoning (T+10)</strong>
-                <p>50m perimeter downwind · ADR Cl₂: plate 266/1017</p>
+                <strong>Zonage reflexe (T+10)</strong>
+                <p>Perimetre 50m sous le vent · ADR Cl₂ : plaque 266/1017</p>
               </div>
             </div>
             <div class="ops-action">
               <span class="ops-dot blue"></span>
               <div>
-                <strong>PCO Activation (T+15)</strong>
-                <p>GOC board · Sensitive points identification · Reinforcement request</p>
+                <strong>Activation PCO (T+15)</strong>
+                <p>Tableau GOC · Identification points sensibles · Demande renforts</p>
               </div>
             </div>
           </div>
@@ -647,29 +726,29 @@
         <div class="ops-card" data-reveal>
           <div class="ops-header" style="background:linear-gradient(135deg,#B45309,#F59E0B);">
             <span class="ops-phase">2</span>
-            <h4>Threat Analysis & Sectors</h4>
+            <h4>Analyse de la Menace & Sectorisation</h4>
             <span class="ops-time">T+25 → T+60 min</span>
           </div>
           <div class="ops-body">
             <div class="ops-action">
               <span class="ops-dot amber"></span>
               <div>
-                <strong>CMIC Deployment</strong>
-                <p>Chemical identification confirmed · EPI level deployment</p>
+                <strong>Deploiement CMIC</strong>
+                <p>Identification chimique confirmee · Deploiement niveau EPI</p>
               </div>
             </div>
             <div class="ops-action">
               <span class="ops-dot amber"></span>
               <div>
-                <strong>Population Protection</strong>
-                <p>Confinement orders · VMC shutdown · Shelter instructions</p>
+                <strong>Protection de la Population</strong>
+                <p>Ordres de confinement · Coupure VMC · Consignes de mise a l'abri</p>
               </div>
             </div>
             <div class="ops-action">
               <span class="ops-dot amber"></span>
               <div>
-                <strong>Media Communication</strong>
-                <p>Official message: confirm TMD accident · deny malicious hypothesis</p>
+                <strong>Communication Medias</strong>
+                <p>Message officiel : confirmer accident TMD · dementir hypothese malveillante</p>
               </div>
             </div>
           </div>
@@ -678,29 +757,29 @@
         <div class="ops-card" data-reveal>
           <div class="ops-header" style="background:linear-gradient(135deg,#991B1B,#EF4444);">
             <span class="ops-phase">3</span>
-            <h4>Major Crisis & Multi-site</h4>
+            <h4>Crise Majeure & Multi-site</h4>
             <span class="ops-time">T+60 → T+130 min</span>
           </div>
           <div class="ops-body">
             <div class="ops-action">
               <span class="ops-dot red"></span>
               <div>
-                <strong>Domino Effect Management</strong>
-                <p>Industrial site reactions · Chemical compatibility check</p>
+                <strong>Gestion Effet Domino</strong>
+                <p>Reactions sites industriels · Verification compatibilite chimique</p>
               </div>
             </div>
             <div class="ops-action">
               <span class="ops-dot red"></span>
               <div>
-                <strong>Hospital Saturation</strong>
-                <p>Plan Blanc activation if UA > capacity · SMUR reinforcement</p>
+                <strong>Saturation Hospitaliere</strong>
+                <p>Activation Plan Blanc si UA > capacite · Renfort SMUR</p>
               </div>
             </div>
             <div class="ops-action">
               <span class="ops-dot red"></span>
               <div>
-                <strong>Vulnerable Populations</strong>
-                <p>Schools, hospitals, stations — priority confinement protocols</p>
+                <strong>Populations Vulnerables</strong>
+                <p>Ecoles, hopitaux, gares — protocoles de confinement prioritaire</p>
               </div>
             </div>
           </div>
@@ -709,7 +788,7 @@
         <div class="ops-card" data-reveal>
           <div class="ops-header" style="background:linear-gradient(135deg,#047857,#10B981);">
             <span class="ops-phase">4</span>
-            <h4>Stabilization</h4>
+            <h4>Stabilisation</h4>
             <span class="ops-time">T+130 → T+150 min</span>
           </div>
           <div class="ops-body">
