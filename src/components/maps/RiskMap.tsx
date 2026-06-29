@@ -1,76 +1,81 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { Badge } from "@/components/ui/Badge";
 import { generateRegionRisks } from "@/data/mockData";
+import { motion } from "framer-motion";
 
 const risks = generateRegionRisks();
 const riskColors: Record<string, string> = { high: "#EF4444", medium: "#F59E0B", low: "#22C55E" };
 
+function latLngToSvg(lat: number, lng: number): { x: number; y: number } {
+  const minLat = 21, maxLat = 36, minLng = -17, maxLng = -1;
+  const x = ((lng - minLng) / (maxLng - minLng)) * 700 + 50;
+  const y = ((maxLat - lat) / (maxLat - minLat)) * 500 + 25;
+  return { x, y };
+}
+
 export function RiskMap() {
-  const [mounted, setMounted] = useState(false);
-  const [L, setL] = useState<any>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    import("react-leaflet")
-      .then(setL)
-      .catch(() => setError(true));
-  }, []);
-
-  if (!mounted || (!L && !error)) {
-    return (
-      <GlassCard className="flex h-[500px] items-center justify-center">
-        <div className="text-gray-400">Chargement de la carte...</div>
-      </GlassCard>
-    );
-  }
-
-  if (error || !L) {
-    return (
-      <GlassCard className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Cartographie des Risques</h3>
-        <div className="space-y-2">
-          {risks.sort((a, b) => b.alertCount - a.alertCount).map((r) => (
-            <div key={r.id} className="flex items-center justify-between rounded-lg bg-white/[0.03] p-3">
-              <span className="text-sm font-medium">{r.name}</span>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400">{r.alertCount} alertes</span>
-                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: riskColors[r.riskLevel] }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
-    );
-  }
-
-  const { MapContainer, TileLayer, CircleMarker, Popup } = L;
+  const [hovered, setHovered] = useState<string | null>(null);
 
   return (
-    <GlassCard className="overflow-hidden p-0">
-      <div className="p-4 pb-0">
+    <GlassCard className="p-6">
+      <div className="mb-4">
         <h3 className="text-lg font-semibold">Cartographie des Risques</h3>
         <p className="text-sm text-gray-400">Répartition géographique des alertes par région</p>
       </div>
-      <div className="h-[500px]">
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <MapContainer center={[31.7917, -7.0926]} zoom={5} style={{ height: "100%", width: "100%", background: "#0A0E1A" }} zoomControl={false}>
-          <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" attribution="CartoDB" />
-          {risks.map((r) => (
-            <CircleMarker key={r.id} center={[r.lat, r.lng]} radius={Math.max(r.alertCount / 2, 8)} pathOptions={{ color: riskColors[r.riskLevel], fillColor: riskColors[r.riskLevel], fillOpacity: 0.4, weight: 2 }}>
-              <Popup>
-                <div className="text-sm">
-                  <strong>{r.name}</strong><br />
-                  Alertes: {r.alertCount}<br />
-                  Critiques: {r.criticalCount}<br />
-                  Catégorie: {r.topCategory}
-                </div>
-              </Popup>
-            </CircleMarker>
-          ))}
-        </MapContainer>
+
+      <div className="flex gap-3 mb-4">
+        {[{ label: "Élevé", color: "#EF4444" }, { label: "Moyen", color: "#F59E0B" }, { label: "Faible", color: "#22C55E" }].map((l) => (
+          <div key={l.label} className="flex items-center gap-1.5 text-xs text-gray-400">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: l.color }} />
+            {l.label}
+          </div>
+        ))}
       </div>
+
+      <svg viewBox="0 0 800 550" className="w-full h-auto">
+        <defs>
+          <radialGradient id="bg-glow">
+            <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.05" />
+            <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <rect width="800" height="550" fill="url(#bg-glow)" rx="16" />
+
+        {risks.map((r) => {
+          const { x, y } = latLngToSvg(r.lat, r.lng);
+          const radius = Math.max(r.alertCount / 2, 12);
+          const isHovered = hovered === r.id;
+          const color = riskColors[r.riskLevel];
+
+          return (
+            <g key={r.id} onMouseEnter={() => setHovered(r.id)} onMouseLeave={() => setHovered(null)} className="cursor-pointer">
+              <motion.circle
+                cx={x} cy={y} r={radius + 8}
+                fill={color} opacity={0.1}
+                animate={{ r: [radius + 8, radius + 14, radius + 8] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <circle cx={x} cy={y} r={radius} fill={color} opacity={0.3} stroke={color} strokeWidth={2} />
+              <circle cx={x} cy={y} r={4} fill={color} />
+
+              <text x={x} y={y - radius - 8} textAnchor="middle" fill="#CBD5E1" fontSize={isHovered ? 12 : 10} fontWeight={isHovered ? 600 : 400}>
+                {r.name.split("-")[0].trim()}
+              </text>
+
+              {isHovered && (
+                <g>
+                  <rect x={x - 90} y={y + radius + 8} width={180} height={72} rx={8} fill="#1E293B" stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+                  <text x={x} y={y + radius + 28} textAnchor="middle" fill="white" fontSize={11} fontWeight={600}>{r.name}</text>
+                  <text x={x} y={y + radius + 44} textAnchor="middle" fill="#94A3B8" fontSize={10}>Alertes: {r.alertCount} | Critiques: {r.criticalCount}</text>
+                  <text x={x} y={y + radius + 60} textAnchor="middle" fill="#94A3B8" fontSize={10}>{r.topCategory}</text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+      </svg>
     </GlassCard>
   );
 }
