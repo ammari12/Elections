@@ -4,12 +4,21 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { generateRegionRisks } from "@/data/mockData";
 
 const risks = generateRegionRisks();
+const riskColors: Record<string, string> = { high: "#EF4444", medium: "#F59E0B", low: "#22C55E" };
 
 export function RiskMap() {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  const [L, setL] = useState<any>(null);
+  const [error, setError] = useState(false);
 
-  if (!mounted) {
+  useEffect(() => {
+    setMounted(true);
+    import("react-leaflet")
+      .then(setL)
+      .catch(() => setError(true));
+  }, []);
+
+  if (!mounted || (!L && !error)) {
     return (
       <GlassCard className="flex h-[500px] items-center justify-center">
         <div className="text-gray-400">Chargement de la carte...</div>
@@ -17,21 +26,26 @@ export function RiskMap() {
     );
   }
 
-  return <RiskMapClient />;
-}
-
-function RiskMapClient() {
-  const [L, setL] = useState<any>(null);
-
-  useEffect(() => {
-    import("react-leaflet").then(setL);
-  }, []);
-
-  if (!L) return <GlassCard className="flex h-[500px] items-center justify-center"><div className="text-gray-400">Chargement...</div></GlassCard>;
+  if (error || !L) {
+    return (
+      <GlassCard className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Cartographie des Risques</h3>
+        <div className="space-y-2">
+          {risks.sort((a, b) => b.alertCount - a.alertCount).map((r) => (
+            <div key={r.id} className="flex items-center justify-between rounded-lg bg-white/[0.03] p-3">
+              <span className="text-sm font-medium">{r.name}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-400">{r.alertCount} alertes</span>
+                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: riskColors[r.riskLevel] }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </GlassCard>
+    );
+  }
 
   const { MapContainer, TileLayer, CircleMarker, Popup } = L;
-
-  const riskColors: Record<string, string> = { high: "#EF4444", medium: "#F59E0B", low: "#22C55E" };
 
   return (
     <GlassCard className="overflow-hidden p-0">
