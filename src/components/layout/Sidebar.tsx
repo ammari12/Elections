@@ -30,19 +30,19 @@ export function Sidebar() {
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-white/10 bg-[#0B0F1A]/95 backdrop-blur-xl"
     >
-      <div className="flex items-center gap-3 border-b border-white/10 px-4 py-5">
+      <Link href="/" className="flex items-center gap-3 border-b border-white/10 px-4 py-5">
         <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-lg font-bold text-white">
           V
         </motion.div>
         <AnimatePresence>
           {sidebarOpen && (
             <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="overflow-hidden">
-              <div className="text-sm font-bold text-white">VeilleMaroc</div>
+              <div className="text-sm font-bold text-white">VigieScan</div>
               <div className="text-[10px] text-gray-500">Élections 2026</div>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </Link>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {

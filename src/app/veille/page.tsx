@@ -111,6 +111,12 @@ export default function VeillePage() {
                           <span>{new Date(item.timestamp).toLocaleDateString("fr-FR")}</span>
                           {item.type === "alert" && item.category && <span className="rounded-md bg-white/5 px-2 py-0.5">{item.category}</span>}
                           {item.type === "article" && item.parties?.map((p: string) => <span key={p} className="rounded-md bg-blue-500/10 px-2 py-0.5 text-blue-400">{p}</span>)}
+                          {(item as any).url && (item as any).url !== "#" && (
+                            <a href={(item as any).url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Source ↗</a>
+                          )}
+                          {(item as any).sourceUrl && (
+                            <a href={(item as any).sourceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Source ↗</a>
+                          )}
                         </div>
                       </div>
                     </div>

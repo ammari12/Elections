@@ -39,6 +39,65 @@ export interface ArticleData {
   excerpt: string;
 }
 
+const PARTY_KEYWORDS: Record<string, string[]> = {
+  RNI: ["rni", "rassemblement national des indépendants", "akhannouch"],
+  PAM: ["pam", "authenticité et modernité"],
+  Istiqlal: ["istiqlal"],
+  PJD: ["pjd", "justice et développement"],
+  USFP: ["usfp", "union socialiste"],
+  MP: ["mouvement populaire"],
+  PPS: ["pps", "progrès et socialisme"],
+  UC: ["union constitutionnelle"],
+  FGD: ["fgd", "gauche démocratique"],
+};
+
+const NEGATIVE_WORDS = ["crise", "tension", "scandale", "polémique", "critique", "échec", "violence", "fraude", "corruption", "désinformation", "haine", "menace"];
+const POSITIVE_WORDS = ["succès", "victoire", "réussite", "avancée", "accord", "soutien", "progrès", "lancement", "réforme positive"];
+
+function detectParties(text: string): string[] {
+  const lower = text.toLowerCase();
+  return Object.entries(PARTY_KEYWORDS)
+    .filter(([, kws]) => kws.some((k) => lower.includes(k)))
+    .map(([name]) => name);
+}
+
+function detectSentiment(text: string): "positive" | "negative" | "neutral" {
+  const lower = text.toLowerCase();
+  const neg = NEGATIVE_WORDS.some((w) => lower.includes(w));
+  const pos = POSITIVE_WORDS.some((w) => lower.includes(w));
+  if (neg && !pos) return "negative";
+  if (pos && !neg) return "positive";
+  return "neutral";
+}
+
+const ALERT_KEYWORDS: { match: string[]; category: string; severity: "critical" | "high" | "medium" | "low" }[] = [
+  { match: ["désinformation", "fake news", "rumeur"], category: "Désinformation", severity: "high" },
+  { match: ["violence", "menace"], category: "Appels à la violence", severity: "critical" },
+  { match: ["haine", "discrimination"], category: "Discours de haine", severity: "high" },
+  { match: ["fraude", "corruption"], category: "Fraude électorale", severity: "critical" },
+  { match: ["diffamation", "injure", "insulte"], category: "Diffamation", severity: "medium" },
+  { match: ["manipulation", "scandale"], category: "Manipulation", severity: "medium" },
+];
+
+function detectAlertFromArticle(article: ArticleData): AlertData | null {
+  const lower = (article.title + " " + article.excerpt).toLowerCase();
+  const hit = ALERT_KEYWORDS.find((k) => k.match.some((m) => lower.includes(m)));
+  if (!hit) return null;
+  return {
+    id: `alert-${article.id}`,
+    title: article.title,
+    description: article.excerpt,
+    severity: hit.severity,
+    category: hit.category,
+    source: article.source,
+    sourceUrl: article.url,
+    region: "National",
+    party: article.parties[0] || "",
+    timestamp: article.date,
+    status: "new",
+  };
+}
+
 export interface AlertData {
   id: string;
   title: string;
@@ -46,6 +105,7 @@ export interface AlertData {
   severity: "critical" | "high" | "medium" | "low";
   category: string;
   source: string;
+  sourceUrl: string;
   region: string;
   party: string;
   timestamp: string;
@@ -152,35 +212,63 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       { progress: 95, step: "Génération des indicateurs KPI..." },
     ];
 
+    let rawArticles: { id: string; title: string; excerpt: string; source: string; sourceUrl: string; category: string; date: string }[] = [];
+    try {
+      const res = await fetch("/api/articles");
+      const data = await res.json();
+      rawArticles = (data.articles || []).map((a: any) => ({ ...a, sourceUrl: a.sourceUrl }));
+    } catch {
+      rawArticles = [];
+    }
+
     for (const s of steps) {
-      await new Promise((r) => setTimeout(r, 800 + Math.random() * 600));
+      await new Promise((r) => setTimeout(r, 500 + Math.random() * 400));
       set({ analysisProgress: s.progress, analysisStep: s.step });
     }
 
-    const articles = generateRealArticles();
-    const alerts = generateRealAlerts(articles);
-    const partyScores = generatePartyScores();
-    const sentimentByParty = generateSentimentByParty();
-    const mentionsByDay = generateMentionsByDay();
+    const articles: ArticleData[] = rawArticles.map((a, i) => {
+      const text = `${a.title} ${a.excerpt}`;
+      return {
+        id: `art-${i}-${a.source}`,
+        title: a.title,
+        source: a.source,
+        url: a.sourceUrl,
+        date: a.date,
+        sentiment: detectSentiment(text),
+        parties: detectParties(text),
+        category: a.category,
+        excerpt: a.excerpt,
+      };
+    });
+
+    const alerts: AlertData[] = articles
+      .map((a) => detectAlertFromArticle(a))
+      .filter((a): a is AlertData => a !== null);
+
+    const partyScores = computePartyScores(articles);
+    const sentimentByParty = computeSentimentByParty(articles, partyScores);
+    const mentionsByDay = computeMentionsByDay(articles);
 
     const result: AnalysisResult = {
       id: analysisId,
       startedAt,
       completedAt: new Date().toISOString(),
-      period: "30 derniers jours",
+      period: "Flux RSS en direct",
       status: "completed",
       sources: {
         press: articles.length,
-        social: Math.floor(Math.random() * 5000 + 10000),
-        total: articles.length + Math.floor(Math.random() * 5000 + 10000),
+        social: 0,
+        total: articles.length,
       },
       kpis: {
-        totalMentions: mentionsByDay.reduce((a, d) => a + d.total, 0),
+        totalMentions: articles.length,
         totalAlerts: alerts.length,
         criticalAlerts: alerts.filter((a) => a.severity === "critical").length,
-        sentimentScore: +(Math.random() * 0.4 + 0.1).toFixed(2),
-        topParty: partyScores[0].name,
-        topRegion: "Casablanca-Settat",
+        sentimentScore: articles.length
+          ? +((articles.filter((a) => a.sentiment === "positive").length - articles.filter((a) => a.sentiment === "negative").length) / articles.length).toFixed(2)
+          : 0,
+        topParty: partyScores[0]?.name || "—",
+        topRegion: "National",
       },
       articles,
       alerts,
@@ -227,174 +315,65 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   },
 }));
 
-function generateRealArticles(): ArticleData[] {
-  const sources = [
-    { name: "Hespress", type: "digital" },
-    { name: "Le Matin", type: "daily" },
-    { name: "Médias24", type: "digital" },
-    { name: "TelQuel", type: "weekly" },
-    { name: "L'Économiste", type: "daily" },
-    { name: "H24info", type: "digital" },
-    { name: "Le Desk", type: "digital" },
-    { name: "Assabah", type: "daily" },
-    { name: "Al Massae", type: "daily" },
-    { name: "Morocco World News", type: "digital" },
-    { name: "Chouf TV", type: "digital" },
-    { name: "Barlamane", type: "digital" },
-    { name: "La Vie Éco", type: "weekly" },
-    { name: "Challenge Hebdo", type: "weekly" },
-    { name: "Al Alam", type: "daily" },
-  ];
 
-  const topics = [
-    { title: "Préparations électorales 2026 : les partis intensifient leur mobilisation", category: "Élections", parties: ["RNI", "PAM", "Istiqlal"] },
-    { title: "Réforme du code électoral : les nouvelles dispositions adoptées", category: "Législation", parties: ["PJD", "USFP"] },
-    { title: "Inscription sur les listes électorales : campagne nationale lancée", category: "Participation", parties: ["RNI", "PAM"] },
-    { title: "Tensions au sein de la coalition gouvernementale avant les législatives", category: "Politique", parties: ["RNI", "PAM", "Istiqlal"] },
-    { title: "Le PJD critique le bilan du gouvernement Akhannouch", category: "Opposition", parties: ["PJD"] },
-    { title: "Jeunesse et politique : faible taux d'inscription des 18-25 ans", category: "Société", parties: ["USFP", "PPS"] },
-    { title: "Développement rural : enjeu majeur des prochaines élections", category: "Développement", parties: ["MP", "UC"] },
-    { title: "Réseaux sociaux et propagande électorale : la HACA alerte", category: "Médias", parties: ["PAM", "PJD"] },
-    { title: "Alliances électorales : les tractations se multiplient", category: "Politique", parties: ["RNI", "PAM", "MP"] },
-    { title: "Programme économique du RNI : investissements et emploi", category: "Économie", parties: ["RNI"] },
-    { title: "L'Istiqlal réaffirme son ancrage dans les régions du nord", category: "Régional", parties: ["Istiqlal"] },
-    { title: "Désinformation électorale : inquiétudes croissantes des observateurs", category: "Sécurité", parties: ["PJD", "PAM"] },
-    { title: "Parité et quotas : le débat relancé pour 2026", category: "Société", parties: ["USFP", "FGD", "PPS"] },
-    { title: "Le MP mise sur le monde rural pour les législatives", category: "Stratégie", parties: ["MP"] },
-    { title: "Financement des campagnes : nouvelles règles de transparence", category: "Législation", parties: ["RNI", "PAM", "PJD"] },
-    { title: "Sondages d'opinion : le RNI en tête suivi du PAM", category: "Élections", parties: ["RNI", "PAM", "PJD"] },
-    { title: "Régionalisation avancée : impact sur les législatives 2026", category: "Gouvernance", parties: ["PAM", "RNI"] },
-    { title: "Le FGD appelle à un front de gauche unifié", category: "Opposition", parties: ["FGD", "PPS", "USFP"] },
-    { title: "Discours de haine en ligne : cas signalés en hausse de 30%", category: "Sécurité", parties: ["PJD", "PAM"] },
-    { title: "Infrastructure et connectivité : promesses électorales en débat", category: "Développement", parties: ["RNI", "Istiqlal"] },
-    { title: "L'USFP tient son congrès national en vue des élections", category: "Politique", parties: ["USFP"] },
-    { title: "Observation électorale : les ONG se préparent", category: "Société", parties: [] },
-    { title: "Casablanca : bataille électorale entre RNI et PAM", category: "Régional", parties: ["RNI", "PAM"] },
-    { title: "Affichage politique illégal signalé dans plusieurs villes", category: "Sécurité", parties: ["PJD", "Istiqlal"] },
-    { title: "Numérisation du processus électoral : avancées et défis", category: "Technologie", parties: ["RNI"] },
-  ];
+const PARTY_META: Record<string, { fullName: string; color: string }> = {
+  RNI: { fullName: "Rassemblement National des Indépendants", color: "#8B5CF6" },
+  PAM: { fullName: "Parti Authenticité et Modernité", color: "#3B82F6" },
+  Istiqlal: { fullName: "Parti de l'Istiqlal", color: "#22C55E" },
+  PJD: { fullName: "Parti de la Justice et du Développement", color: "#EF4444" },
+  USFP: { fullName: "Union Socialiste des Forces Populaires", color: "#EC4899" },
+  MP: { fullName: "Mouvement Populaire", color: "#14B8A6" },
+  PPS: { fullName: "Parti du Progrès et du Socialisme", color: "#F59E0B" },
+  UC: { fullName: "Union Constitutionnelle", color: "#F97316" },
+  FGD: { fullName: "Fédération de la Gauche Démocratique", color: "#E11D48" },
+};
 
-  const sentiments: ("positive" | "negative" | "neutral")[] = ["positive", "negative", "neutral"];
+function computePartyScores(articles: ArticleData[]): PartyScore[] {
+  const counts: Record<string, { mentions: number; positive: number; negative: number }> = {};
+  for (const a of articles) {
+    for (const p of a.parties) {
+      if (!counts[p]) counts[p] = { mentions: 0, positive: 0, negative: 0 };
+      counts[p].mentions += 1;
+      if (a.sentiment === "positive") counts[p].positive += 1;
+      if (a.sentiment === "negative") counts[p].negative += 1;
+    }
+  }
+  return Object.entries(counts)
+    .map(([name, c]) => ({
+      id: name.toLowerCase(),
+      name,
+      fullName: PARTY_META[name]?.fullName || name,
+      color: PARTY_META[name]?.color || "#64748B",
+      score: c.mentions,
+      mentions: c.mentions,
+      sentiment: c.mentions ? +((c.positive - c.negative) / c.mentions).toFixed(2) : 0,
+      trend: c.positive >= c.negative ? ("up" as const) : ("down" as const),
+      trendValue: c.mentions,
+    }))
+    .sort((a, b) => b.mentions - a.mentions);
+}
 
-  return topics.map((t, i) => {
-    const src = sources[i % sources.length];
-    const daysAgo = Math.floor(Math.random() * 30);
-    const date = new Date();
-    date.setDate(date.getDate() - daysAgo);
+function computeSentimentByParty(articles: ArticleData[], scores: PartyScore[]): SentimentData[] {
+  return scores.map((s) => {
+    const partyArticles = articles.filter((a) => a.parties.includes(s.name));
     return {
-      id: `art-${i}`,
-      title: t.title,
-      source: src.name,
-      url: "#",
-      date: date.toISOString().split("T")[0],
-      sentiment: sentiments[Math.floor(Math.random() * 3)],
-      parties: t.parties,
-      category: t.category,
-      excerpt: t.title + ". Analyse approfondie des enjeux et implications pour le paysage politique marocain à l'approche des élections législatives de 2026.",
+      party: s.name,
+      positive: partyArticles.filter((a) => a.sentiment === "positive").length,
+      neutral: partyArticles.filter((a) => a.sentiment === "neutral").length,
+      negative: partyArticles.filter((a) => a.sentiment === "negative").length,
+      color: s.color,
     };
   });
 }
 
-function generateRealAlerts(articles: ArticleData[]): AlertData[] {
-  const regions = ["Casablanca-Settat", "Rabat-Salé-Kénitra", "Tanger-Tétouan-Al Hoceïma", "Fès-Meknès", "Marrakech-Safi", "Oriental", "Souss-Massa", "Drâa-Tafilalet", "Béni Mellal-Khénifra"];
-  const categories = ["Désinformation", "Injures", "Diffamation", "Appels à la violence", "Discours de haine", "Manipulation", "Fraude électorale"];
-  const severities: ("critical" | "high" | "medium" | "low")[] = ["critical", "high", "medium", "low"];
-
-  const alertTemplates = [
-    { title: "Campagne de désinformation détectée sur les réseaux sociaux", cat: "Désinformation", sev: "critical" as const },
-    { title: "Propos injurieux envers un candidat sur Facebook", cat: "Injures", sev: "high" as const },
-    { title: "Diffusion de faux sondages électoraux", cat: "Manipulation", sev: "critical" as const },
-    { title: "Appel à la violence dans un groupe Telegram", cat: "Appels à la violence", sev: "critical" as const },
-    { title: "Discours de haine ethnique sur TikTok", cat: "Discours de haine", sev: "high" as const },
-    { title: "Diffamation d'un candidat dans un article de presse", cat: "Diffamation", sev: "medium" as const },
-    { title: "Tentative de manipulation de l'opinion via bots Twitter", cat: "Manipulation", sev: "high" as const },
-    { title: "Signalement d'achat de votes dans une commune rurale", cat: "Fraude électorale", sev: "critical" as const },
-    { title: "Contenu haineux ciblant un parti sur YouTube", cat: "Discours de haine", sev: "medium" as const },
-    { title: "Faux communiqué attribué à un parti politique", cat: "Désinformation", sev: "high" as const },
-    { title: "Menaces envers des observateurs électoraux", cat: "Appels à la violence", sev: "critical" as const },
-    { title: "Propagande électorale non déclarée sur Instagram", cat: "Manipulation", sev: "low" as const },
-    { title: "Publication de données personnelles de candidats", cat: "Diffamation", sev: "high" as const },
-    { title: "Rumeurs infondées sur le processus de vote", cat: "Désinformation", sev: "medium" as const },
-    { title: "Insultes entre militants sur les réseaux sociaux", cat: "Injures", sev: "low" as const },
-  ];
-
-  const parties = ["RNI", "PAM", "PJD", "Istiqlal", "USFP", "PPS", "MP", "UC", "FGD"];
-  const sources = ["Twitter/X", "Facebook", "TikTok", "YouTube", "Instagram", "Hespress", "Presse"];
-
-  return alertTemplates.map((t, i) => {
-    const daysAgo = Math.floor(Math.random() * 30);
-    const date = new Date();
-    date.setDate(date.getDate() - daysAgo);
-    return {
-      id: `alert-${Date.now()}-${i}`,
-      title: t.title,
-      description: `${t.title}. Détecté via l'analyse automatique des contenus en ligne. Région concernée : ${regions[i % regions.length]}.`,
-      severity: t.sev,
-      category: t.cat,
-      source: sources[i % sources.length],
-      region: regions[i % regions.length],
-      party: parties[i % parties.length],
-      timestamp: date.toISOString(),
-      status: (i < 3 ? "new" : i < 8 ? "investigating" : "resolved") as "new" | "investigating" | "resolved",
-    };
-  });
-}
-
-function generatePartyScores(): PartyScore[] {
-  const parties = [
-    { id: "rni", name: "RNI", fullName: "Rassemblement National des Indépendants", color: "#8B5CF6" },
-    { id: "pam", name: "PAM", fullName: "Parti Authenticité et Modernité", color: "#3B82F6" },
-    { id: "istiqlal", name: "Istiqlal", fullName: "Parti de l'Istiqlal", color: "#22C55E" },
-    { id: "pjd", name: "PJD", fullName: "Parti de la Justice et du Développement", color: "#EF4444" },
-    { id: "usfp", name: "USFP", fullName: "Union Socialiste des Forces Populaires", color: "#EC4899" },
-    { id: "mp", name: "MP", fullName: "Mouvement Populaire", color: "#14B8A6" },
-    { id: "pps", name: "PPS", fullName: "Parti du Progrès et du Socialisme", color: "#F59E0B" },
-    { id: "uc", name: "UC", fullName: "Union Constitutionnelle", color: "#F97316" },
-    { id: "fgd", name: "FGD", fullName: "Fédération de la Gauche Démocratique", color: "#E11D48" },
-    { id: "pads", name: "PADS", fullName: "Parti de l'Action Démocratique et Sociale", color: "#06B6D4" },
-    { id: "mds", name: "MDS", fullName: "Mouvement Démocratique et Social", color: "#84CC16" },
-    { id: "psd", name: "PSD", fullName: "Parti Socialiste Démocratique", color: "#A855F7" },
-  ];
-
-  return parties.map((p, i) => ({
-    ...p,
-    score: Math.max(95 - i * 7 + Math.floor(Math.random() * 10 - 5), 15),
-    mentions: Math.floor(Math.random() * 8000 + 2000),
-    sentiment: +(Math.random() * 1.5 - 0.3).toFixed(2),
-    trend: Math.random() > 0.4 ? "up" as const : "down" as const,
-    trendValue: +(Math.random() * 15 + 1).toFixed(1),
-  }));
-}
-
-function generateSentimentByParty(): SentimentData[] {
-  const parties = [
-    { name: "RNI", color: "#8B5CF6" }, { name: "PAM", color: "#3B82F6" },
-    { name: "Istiqlal", color: "#22C55E" }, { name: "PJD", color: "#EF4444" },
-    { name: "USFP", color: "#EC4899" }, { name: "MP", color: "#14B8A6" },
-    { name: "PPS", color: "#F59E0B" }, { name: "UC", color: "#F97316" },
-  ];
-  return parties.map((p) => ({
-    party: p.name,
-    positive: Math.floor(Math.random() * 35 + 20),
-    neutral: Math.floor(Math.random() * 25 + 20),
-    negative: Math.floor(Math.random() * 25 + 10),
-    color: p.color,
-  }));
-}
-
-function generateMentionsByDay(): DailyMentions[] {
-  const data = [];
-  for (let i = 29; i >= 0; i--) {
+function computeMentionsByDay(articles: ArticleData[]): DailyMentions[] {
+  const days: DailyMentions[] = [];
+  for (let i = 13; i >= 0; i--) {
     const date = new Date();
     date.setDate(date.getDate() - i);
-    const press = Math.floor(Math.random() * 200 + 50);
-    const social = Math.floor(Math.random() * 3000 + 1000);
-    data.push({
-      date: date.toISOString().split("T")[0],
-      press,
-      social,
-      total: press + social,
-    });
+    const dateStr = date.toISOString().split("T")[0];
+    const press = articles.filter((a) => a.date.startsWith(dateStr)).length;
+    days.push({ date: dateStr, press, social: 0, total: press });
   }
-  return data;
+  return days;
 }

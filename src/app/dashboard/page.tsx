@@ -204,6 +204,11 @@ export default function DashboardPage() {
                           {article.parties.map((p) => (
                             <span key={p} className="rounded-md bg-blue-500/10 px-2 py-0.5 text-blue-400">{p}</span>
                           ))}
+                          {article.url && article.url !== "#" && (
+                            <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+                              Voir la source ↗
+                            </a>
+                          )}
                         </div>
                       </div>
                       <Badge variant={article.sentiment === "positive" ? "low" : article.sentiment === "negative" ? "critical" : "info"}>
