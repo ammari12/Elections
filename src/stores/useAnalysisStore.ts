@@ -10,6 +10,7 @@ export interface AnalysisResult {
   sources: {
     press: number;
     social: number;
+    uploads: number;
     total: number;
   };
   kpis: {
@@ -65,6 +66,7 @@ export interface ArticleData {
   parties: string[];
   category: string;
   excerpt: string;
+  isUpload?: boolean;
 }
 
 const PARTY_KEYWORDS: Record<string, string[]> = {
@@ -209,10 +211,52 @@ interface AnalysisState {
   reports: GeneratedReport[];
   loadFromStorage: () => void;
   startAnalysis: () => Promise<void>;
+  addUploadedDocument: (doc: { title: string; fileName: string; url: string; excerpt: string }) => void;
   addReport: (report: GeneratedReport) => void;
   updateReport: (id: string, updates: Partial<GeneratedReport>) => void;
   deleteReport: (id: string) => void;
   deleteAnalysis: (id: string) => void;
+}
+
+function buildAnalysisFromArticles(base: Pick<AnalysisResult, "id" | "startedAt" | "period">, articles: ArticleData[]): AnalysisResult {
+  const alerts: AlertData[] = articles
+    .map((a) => detectAlertFromArticle(a))
+    .filter((a): a is AlertData => a !== null);
+
+  const partyScores = computePartyScores(articles);
+  const sentimentByParty = computeSentimentByParty(articles, partyScores);
+  const mentionsByDay = computeMentionsByDay(articles);
+  const regionCounts: Record<string, number> = {};
+  for (const a of alerts) regionCounts[a.region] = (regionCounts[a.region] || 0) + 1;
+  const topRegion = Object.entries(regionCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "National";
+  const regionRisks = computeRegionRisks(alerts);
+  const press = articles.filter((a) => !a.isUpload).length;
+  const uploads = articles.filter((a) => a.isUpload).length;
+
+  return {
+    id: base.id,
+    startedAt: base.startedAt,
+    completedAt: new Date().toISOString(),
+    period: base.period,
+    status: "completed",
+    sources: { press, social: 0, uploads, total: articles.length },
+    kpis: {
+      totalMentions: articles.length,
+      totalAlerts: alerts.length,
+      criticalAlerts: alerts.filter((a) => a.severity === "critical").length,
+      sentimentScore: articles.length
+        ? +((articles.filter((a) => a.sentiment === "positive").length - articles.filter((a) => a.sentiment === "negative").length) / articles.length).toFixed(2)
+        : 0,
+      topParty: partyScores[0]?.name || "—",
+      topRegion,
+    },
+    articles,
+    alerts,
+    partyScores,
+    sentimentByParty,
+    mentionsByDay,
+    regionRisks,
+  };
 }
 
 function saveToStorage(key: string, data: any) {
@@ -291,46 +335,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       };
     });
 
-    const alerts: AlertData[] = articles
-      .map((a) => detectAlertFromArticle(a))
-      .filter((a): a is AlertData => a !== null);
-
-    const partyScores = computePartyScores(articles);
-    const sentimentByParty = computeSentimentByParty(articles, partyScores);
-    const mentionsByDay = computeMentionsByDay(articles);
-    const regionCounts: Record<string, number> = {};
-    for (const a of alerts) regionCounts[a.region] = (regionCounts[a.region] || 0) + 1;
-    const topRegion = Object.entries(regionCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "National";
-    const regionRisks = computeRegionRisks(alerts);
-
-    const result: AnalysisResult = {
-      id: analysisId,
-      startedAt,
-      completedAt: new Date().toISOString(),
-      period: "Flux RSS en direct",
-      status: "completed",
-      sources: {
-        press: articles.length,
-        social: 0,
-        total: articles.length,
-      },
-      kpis: {
-        totalMentions: articles.length,
-        totalAlerts: alerts.length,
-        criticalAlerts: alerts.filter((a) => a.severity === "critical").length,
-        sentimentScore: articles.length
-          ? +((articles.filter((a) => a.sentiment === "positive").length - articles.filter((a) => a.sentiment === "negative").length) / articles.length).toFixed(2)
-          : 0,
-        topParty: partyScores[0]?.name || "—",
-        topRegion,
-      },
-      articles,
-      alerts,
-      partyScores,
-      sentimentByParty,
-      mentionsByDay,
-      regionRisks,
-    };
+    const result = buildAnalysisFromArticles({ id: analysisId, startedAt, period: "Flux RSS en direct" }, articles);
 
     const analyses = [result, ...get().analyses].slice(0, 20);
     saveToStorage("veille_analyses", analyses);
@@ -342,6 +347,33 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       analyses,
       currentAnalysis: result,
     });
+  },
+
+  addUploadedDocument: (doc) => {
+    const current = get().currentAnalysis;
+    const text = `${doc.title} ${doc.excerpt}`;
+    const newArticle: ArticleData = {
+      id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      title: doc.title,
+      source: doc.fileName,
+      url: doc.url,
+      date: new Date().toISOString(),
+      sentiment: detectSentiment(text),
+      parties: detectParties(text),
+      category: "Document Uploadé",
+      excerpt: doc.excerpt,
+      isUpload: true,
+    };
+
+    const base = current
+      ? { id: current.id, startedAt: current.startedAt, period: current.period }
+      : { id: `analysis-${Date.now()}`, startedAt: new Date().toISOString(), period: "Documents uploadés" };
+    const articles = current ? [...current.articles, newArticle] : [newArticle];
+    const result = buildAnalysisFromArticles(base, articles);
+
+    const analyses = [result, ...get().analyses.filter((a) => a.id !== result.id)].slice(0, 20);
+    saveToStorage("veille_analyses", analyses);
+    set({ analyses, currentAnalysis: result });
   },
 
   addReport: (report) => {
