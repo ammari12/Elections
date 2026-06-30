@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useAnalysisStore } from "@/stores/useAnalysisStore";
+import { buildReportHtml } from "@/lib/buildReport";
 import { motion } from "framer-motion";
 import { FileText, Download, CheckCircle, Settings, Eye, Trash2, AlertCircle, Play } from "lucide-react";
 import Link from "next/link";
@@ -37,6 +38,8 @@ export default function ReportingPage() {
 
     const reportId = `report-${Date.now()}`;
     const selectedSections = sections.filter((_, i) => checked[i]).map((s) => s.label);
+    const selectedSectionIds = sections.filter((_, i) => checked[i]).map((s) => s.id);
+    const reportContent = buildReportHtml(currentAnalysis, selectedSectionIds);
     const totalPages = checked.reduce((acc, v, i) => {
       if (!v) return acc;
       const range = sections[i].pages.split("-");
@@ -71,10 +74,30 @@ export default function ReportingPage() {
       setGenStep(step.s);
     }
 
-    updateReport(reportId, { status: "ready" });
+    updateReport(reportId, { status: "ready", content: reportContent });
     setProgress(100);
     setGenStep("Rapport généré avec succès !");
     setGenerating(false);
+  };
+
+  const handleView = (content?: string) => {
+    if (!content) return;
+    const blob = new Blob([content], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  };
+
+  const handleDownload = (content: string | undefined, name: string) => {
+    if (!content) return;
+    const blob = new Blob([content], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name.replace(/[^a-z0-9]+/gi, "-")}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const hasAnalysis = !!currentAnalysis;
@@ -177,8 +200,8 @@ export default function ReportingPage() {
                     {r.status === "ready" ? <><CheckCircle size={12} /> Prêt</> : r.status === "generating" ? "En cours" : "Erreur"}
                   </Badge>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm"><Eye size={14} /></Button>
-                    <Button variant="ghost" size="sm"><Download size={14} /></Button>
+                    <Button variant="ghost" size="sm" disabled={!r.content} onClick={() => handleView(r.content)}><Eye size={14} /></Button>
+                    <Button variant="ghost" size="sm" disabled={!r.content} onClick={() => handleDownload(r.content, r.name)}><Download size={14} /></Button>
                     <button onClick={() => deleteReport(r.id)} className="p-1.5 text-gray-500 hover:text-red-400 transition-colors">
                       <Trash2 size={14} />
                     </button>

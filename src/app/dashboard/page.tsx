@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
@@ -8,22 +8,26 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useAnalysisStore } from "@/stores/useAnalysisStore";
 import { motion } from "framer-motion";
-import { AlertTriangle, BarChart3, Clock, Eye, FileText, Globe, Play, Shield, TrendingUp, History, Trash2 } from "lucide-react";
+import { AlertTriangle, BarChart3, Clock, Eye, FileText, Globe, Play, Shield, TrendingUp, History, Trash2, X } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
 
 export default function DashboardPage() {
   const { analyses, currentAnalysis, isAnalyzing, analysisProgress, analysisStep, startAnalysis, loadFromStorage, deleteAnalysis } = useAnalysisStore();
+  const [detail, setDetail] = useState<null | { label: string; explanation: string; items: { title: string; source: string; sourceUrl: string }[] }>(null);
 
   useEffect(() => { loadFromStorage(); }, [loadFromStorage]);
 
+  const toItems = (list: { title: string; source: string; url?: string; sourceUrl?: string }[]) =>
+    list.map((a) => ({ title: a.title, source: a.source, sourceUrl: a.url || a.sourceUrl || "" }));
+
   const kpis = currentAnalysis
     ? [
-        { icon: Eye, label: "Mentions Totales", value: currentAnalysis.kpis.totalMentions, color: "from-blue-500 to-cyan-500" },
-        { icon: AlertTriangle, label: "Alertes Détectées", value: currentAnalysis.kpis.totalAlerts, color: "from-red-500 to-orange-500" },
-        { icon: Shield, label: "Alertes Critiques", value: currentAnalysis.kpis.criticalAlerts, color: "from-red-600 to-red-400" },
-        { icon: Globe, label: "Sources Analysées", value: currentAnalysis.sources.total, color: "from-emerald-500 to-teal-500" },
-        { icon: BarChart3, label: "Articles Presse", value: currentAnalysis.sources.press, color: "from-purple-500 to-pink-500" },
-        { icon: FileText, label: "Mentions Sociales", value: currentAnalysis.sources.social, color: "from-amber-500 to-yellow-500" },
+        { icon: Eye, label: "Mentions Totales", value: currentAnalysis.kpis.totalMentions, color: "from-blue-500 to-cyan-500", explanation: "Nombre total d'articles de presse réels collectés via les flux RSS lors de cette analyse.", items: toItems(currentAnalysis.articles) },
+        { icon: AlertTriangle, label: "Alertes Détectées", value: currentAnalysis.kpis.totalAlerts, color: "from-red-500 to-orange-500", explanation: "Articles dont le titre ou le contenu correspond à un mot-clé d'alerte (désinformation, violence, haine, fraude, diffamation, manipulation).", items: toItems(currentAnalysis.alerts) },
+        { icon: Shield, label: "Alertes Critiques", value: currentAnalysis.kpis.criticalAlerts, color: "from-red-600 to-red-400", explanation: "Sous-ensemble des alertes classées en gravité \"critique\" (appels à la violence, fraude électorale).", items: toItems(currentAnalysis.alerts.filter((a) => a.severity === "critical")) },
+        { icon: Globe, label: "Sources Analysées", value: currentAnalysis.sources.total, color: "from-emerald-500 to-teal-500", explanation: "Nombre total d'articles collectés, toutes sources de presse confondues (= Mentions Totales, aucune source sociale n'est encore connectée).", items: toItems(currentAnalysis.articles) },
+        { icon: BarChart3, label: "Articles Presse", value: currentAnalysis.sources.press, color: "from-purple-500 to-pink-500", explanation: "Articles collectés depuis les flux RSS de la presse marocaine (Hespress, Le360, Médias24, etc.).", items: toItems(currentAnalysis.articles) },
+        { icon: FileText, label: "Mentions Sociales", value: currentAnalysis.sources.social, color: "from-amber-500 to-yellow-500", explanation: "Aucune source de réseaux sociaux n'est connectée pour le moment (architecture \"RSS presse uniquement\"). Ce chiffre reste à 0 tant qu'aucune API sociale n'est intégrée.", items: [] },
       ]
     : [];
 
@@ -97,17 +101,48 @@ export default function DashboardPage() {
             {/* KPIs */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
               {kpis.map((kpi, i) => (
-                <GlassCard key={kpi.label} className="p-4" delay={i * 0.05}>
-                  <div className={`mb-3 inline-flex rounded-lg bg-gradient-to-r ${kpi.color} p-2`}>
-                    <kpi.icon size={18} className="text-white" />
-                  </div>
-                  <div className="text-2xl font-bold">
-                    <AnimatedCounter target={kpi.value} />
-                  </div>
-                  <div className="text-xs text-gray-400">{kpi.label}</div>
-                </GlassCard>
+                <button key={kpi.label} onClick={() => setDetail({ label: kpi.label, explanation: kpi.explanation, items: kpi.items })} className="text-left">
+                  <GlassCard className="p-4 cursor-pointer transition-colors hover:bg-white/5" delay={i * 0.05}>
+                    <div className={`mb-3 inline-flex rounded-lg bg-gradient-to-r ${kpi.color} p-2`}>
+                      <kpi.icon size={18} className="text-white" />
+                    </div>
+                    <div className="text-2xl font-bold">
+                      <AnimatedCounter target={kpi.value} />
+                    </div>
+                    <div className="text-xs text-gray-400">{kpi.label}</div>
+                  </GlassCard>
+                </button>
               ))}
             </div>
+
+            {detail && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setDetail(null)}>
+                <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#0F172A] p-6" onClick={(e) => e.stopPropagation()}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">{detail.label}</h3>
+                    <button onClick={() => setDetail(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+                  </div>
+                  <p className="mb-4 text-xs text-gray-500">{detail.explanation}</p>
+                  {detail.items.length === 0 ? (
+                    <p className="text-sm text-gray-500">Aucune source associée.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {detail.items.map((it, i) => (
+                        <div key={i} className="rounded-lg border border-white/5 bg-white/[0.02] p-3 text-sm">
+                          <div className="mb-1 font-medium">{it.title}</div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{it.source}</span>
+                            {it.sourceUrl && it.sourceUrl !== "#" && (
+                              <a href={it.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Voir la source ↗</a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Charts */}
             <div className="grid gap-6 lg:grid-cols-2">

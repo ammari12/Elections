@@ -25,7 +25,35 @@ export interface AnalysisResult {
   partyScores: PartyScore[];
   sentimentByParty: SentimentData[];
   mentionsByDay: DailyMentions[];
+  regionRisks: RegionRisk[];
 }
+
+export interface RegionRisk {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  alertCount: number;
+  criticalCount: number;
+  riskLevel: "high" | "medium" | "low";
+  topCategory: string;
+}
+
+export const REGION_COORDS: Record<string, { id: string; lat: number; lng: number }> = {
+  "Tanger-Tétouan-Al Hoceïma": { id: "tanger", lat: 35.7595, lng: -5.834 },
+  "Oriental": { id: "oriental", lat: 34.6814, lng: -1.9086 },
+  "Fès-Meknès": { id: "fes", lat: 34.0181, lng: -5.0078 },
+  "Rabat-Salé-Kénitra": { id: "rabat", lat: 34.0209, lng: -6.8416 },
+  "Béni Mellal-Khénifra": { id: "beni", lat: 32.3373, lng: -6.3498 },
+  "Casablanca-Settat": { id: "casablanca", lat: 33.5731, lng: -7.5898 },
+  "Marrakech-Safi": { id: "marrakech", lat: 31.6295, lng: -7.9811 },
+  "Drâa-Tafilalet": { id: "draa", lat: 31.9314, lng: -5.3625 },
+  "Souss-Massa": { id: "souss", lat: 30.4278, lng: -9.5981 },
+  "Guelmim-Oued Noun": { id: "guelmim", lat: 28.9833, lng: -10.0578 },
+  "Laâyoune-Sakia El Hamra": { id: "laayoune", lat: 27.1253, lng: -13.1625 },
+  "Dakhla-Oued Ed-Dahab": { id: "dakhla", lat: 23.6848, lng: -15.957 },
+  "National": { id: "national", lat: 31.7917, lng: -7.0926 },
+};
 
 export interface ArticleData {
   id: string;
@@ -53,6 +81,27 @@ const PARTY_KEYWORDS: Record<string, string[]> = {
 
 const NEGATIVE_WORDS = ["crise", "tension", "scandale", "polémique", "critique", "échec", "violence", "fraude", "corruption", "désinformation", "haine", "menace"];
 const POSITIVE_WORDS = ["succès", "victoire", "réussite", "avancée", "accord", "soutien", "progrès", "lancement", "réforme positive"];
+
+export const REGION_KEYWORDS: Record<string, string[]> = {
+  "Tanger-Tétouan-Al Hoceïma": ["tanger", "tétouan", "al hoceïma", "hoceima", "tetouan"],
+  "Oriental": ["oujda", "nador", "berkane", "oriental"],
+  "Fès-Meknès": ["fès", "fes", "meknès", "meknes", "ifrane"],
+  "Rabat-Salé-Kénitra": ["rabat", "salé", "sale", "kénitra", "kenitra", "témara"],
+  "Béni Mellal-Khénifra": ["béni mellal", "beni mellal", "khénifra", "khenifra"],
+  "Casablanca-Settat": ["casablanca", "settat", "mohammedia", "berrechid"],
+  "Marrakech-Safi": ["marrakech", "safi", "essaouira"],
+  "Drâa-Tafilalet": ["ouarzazate", "errachidia", "tafilalet", "drâa", "zagora"],
+  "Souss-Massa": ["agadir", "souss", "massa", "taroudant"],
+  "Guelmim-Oued Noun": ["guelmim", "tan-tan", "sidi ifni"],
+  "Laâyoune-Sakia El Hamra": ["laâyoune", "laayoune", "boujdour"],
+  "Dakhla-Oued Ed-Dahab": ["dakhla"],
+};
+
+function detectRegion(text: string): string {
+  const lower = text.toLowerCase();
+  const hit = Object.entries(REGION_KEYWORDS).find(([, kws]) => kws.some((k) => lower.includes(k)));
+  return hit ? hit[0] : "National";
+}
 
 function detectParties(text: string): string[] {
   const lower = text.toLowerCase();
@@ -91,7 +140,7 @@ function detectAlertFromArticle(article: ArticleData): AlertData | null {
     category: hit.category,
     source: article.source,
     sourceUrl: article.url,
-    region: "National",
+    region: detectRegion(article.title + " " + article.excerpt),
     party: article.parties[0] || "",
     timestamp: article.date,
     status: "new",
@@ -148,6 +197,7 @@ export interface GeneratedReport {
   status: "generating" | "ready" | "failed";
   pages: number;
   size: string;
+  content?: string;
 }
 
 interface AnalysisState {
@@ -248,6 +298,10 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
     const partyScores = computePartyScores(articles);
     const sentimentByParty = computeSentimentByParty(articles, partyScores);
     const mentionsByDay = computeMentionsByDay(articles);
+    const regionCounts: Record<string, number> = {};
+    for (const a of alerts) regionCounts[a.region] = (regionCounts[a.region] || 0) + 1;
+    const topRegion = Object.entries(regionCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "National";
+    const regionRisks = computeRegionRisks(alerts);
 
     const result: AnalysisResult = {
       id: analysisId,
@@ -268,13 +322,14 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
           ? +((articles.filter((a) => a.sentiment === "positive").length - articles.filter((a) => a.sentiment === "negative").length) / articles.length).toFixed(2)
           : 0,
         topParty: partyScores[0]?.name || "—",
-        topRegion: "National",
+        topRegion,
       },
       articles,
       alerts,
       partyScores,
       sentimentByParty,
       mentionsByDay,
+      regionRisks,
     };
 
     const analyses = [result, ...get().analyses].slice(0, 20);
@@ -364,6 +419,32 @@ function computeSentimentByParty(articles: ArticleData[], scores: PartyScore[]):
       color: s.color,
     };
   });
+}
+
+function computeRegionRisks(alerts: AlertData[]): RegionRisk[] {
+  const byRegion: Record<string, AlertData[]> = {};
+  for (const a of alerts) {
+    if (!byRegion[a.region]) byRegion[a.region] = [];
+    byRegion[a.region].push(a);
+  }
+  return Object.entries(byRegion).map(([name, regionAlerts]) => {
+    const criticalCount = regionAlerts.filter((a) => a.severity === "critical").length;
+    const categoryCounts: Record<string, number> = {};
+    for (const a of regionAlerts) categoryCounts[a.category] = (categoryCounts[a.category] || 0) + 1;
+    const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+    const riskLevel: "high" | "medium" | "low" = criticalCount > 0 ? "high" : regionAlerts.length >= 2 ? "medium" : "low";
+    const coords = REGION_COORDS[name] || REGION_COORDS["National"];
+    return {
+      id: coords.id,
+      name,
+      lat: coords.lat,
+      lng: coords.lng,
+      alertCount: regionAlerts.length,
+      criticalCount,
+      riskLevel,
+      topCategory,
+    };
+  }).sort((a, b) => b.alertCount - a.alertCount);
 }
 
 function computeMentionsByDay(articles: ArticleData[]): DailyMentions[] {
